@@ -4,6 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,12 +17,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,12 +41,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import android.app.Application
+import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.AndroidViewModel
@@ -40,6 +57,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.github.lonepheasantwarrior.volcenginetts.ui.theme.VolcengineTTSTheme
+import com.github.lonepheasantwarrior.volcenginetts.ui.theme.SynthButtonLight
+import com.github.lonepheasantwarrior.volcenginetts.ui.theme.SynthButtonDark
+import com.github.lonepheasantwarrior.volcenginetts.ui.theme.SaveButtonLight
+import com.github.lonepheasantwarrior.volcenginetts.ui.theme.SaveButtonDark
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -207,11 +228,24 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
 // 可重用的UI组件样式
 @Composable
 fun TTSHeader() {
-    Text(
-        text = stringResource(id = R.string.app_title),
-        style = MaterialTheme.typography.headlineLarge,
-        modifier = Modifier.padding(bottom = 24.dp)
-    )
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+        )
+    ) {
+        Text(
+            text = stringResource(id = R.string.app_title),
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier
+                .padding(16.dp)
+                .align(Alignment.CenterHorizontally)
+        )
+    }
 }
 
 @Composable
@@ -221,21 +255,46 @@ fun TTSConfigurationInputs(
     onAppIdChange: (String) -> Unit,
     onTokenChange: (String) -> Unit
 ) {
-    // App ID 输入框
-        OutlinedTextField(
-            value = appId,
-            onValueChange = onAppIdChange,
-            label = { Text(stringResource(id = R.string.input_app_id)) },
-            modifier = Modifier.fillMaxWidth()
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
         )
-        
-        // Token 输入框
-        OutlinedTextField(
-            value = token,
-            onValueChange = onTokenChange,
-            label = { Text(stringResource(id = R.string.input_token)) },
-            modifier = Modifier.fillMaxWidth()
-        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // App ID 输入框
+            OutlinedTextField(
+                value = appId,
+                onValueChange = onAppIdChange,
+                label = { Text(stringResource(id = R.string.input_app_id)) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                )
+            )
+            
+            // Token 输入框
+            OutlinedTextField(
+                value = token,
+                onValueChange = onTokenChange,
+                label = { Text(stringResource(id = R.string.input_token)) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                )
+            )
+        }
+    }
 }
 
 @Composable
@@ -256,29 +315,61 @@ fun TTSSceneSelector(
             modifier = Modifier.padding(bottom = 8.dp)
         )
         
-        Button(
-            onClick = { onExpandedChange(true) },
-            modifier = Modifier.fillMaxWidth()
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            )
         ) {
-            Text(selectedScene)
+            Button(
+                onClick = { onExpandedChange(true) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+            ) {
+                Text(
+                    text = selectedScene,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = null
+                )
+            }
         }
 
-        val configuration = LocalConfiguration.current
-        val menuMaxHeight = 0.7 * configuration.screenHeightDp.dp
-        val menuMaxWidth = 0.8 * configuration.screenWidthDp.dp
-        
-        DropdownMenu(
-            expanded = isExpanded,
-            onDismissRequest = { onExpandedChange(false) },
-            modifier = Modifier
-                .widthIn(max = menuMaxWidth)
-                .heightIn(max = menuMaxHeight)
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
         ) {
-            sceneCategories.forEach { scene ->
-                DropdownMenuItem(
-                    text = { Text(scene) },
-                    onClick = { onSceneSelect(scene) }
-                )
+            val configuration = LocalConfiguration.current
+            val menuMaxHeight = 0.7 * configuration.screenHeightDp.dp
+            val menuMaxWidth = 0.8 * configuration.screenWidthDp.dp
+            
+            DropdownMenu(
+                expanded = isExpanded,
+                onDismissRequest = { onExpandedChange(false) },
+                modifier = Modifier
+                    .widthIn(max = menuMaxWidth)
+                    .heightIn(max = menuMaxHeight),
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                sceneCategories.forEach { scene ->
+                    DropdownMenuItem(
+                        text = { Text(scene) },
+                        onClick = { onSceneSelect(scene) },
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
             }
         }
     }
@@ -302,29 +393,61 @@ fun TTSSpeakerSelector(
             modifier = Modifier.padding(bottom = 8.dp)
         )
         
-        Button(
-            onClick = { onExpandedChange(true) },
-            modifier = Modifier.fillMaxWidth()
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            )
         ) {
-            Text(selectedSpeakerName)
+            Button(
+                onClick = { onExpandedChange(true) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+            ) {
+                Text(
+                    text = selectedSpeakerName,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = null
+                )
+            }
         }
         
-        val configuration = LocalConfiguration.current
-        val menuMaxHeight = 0.7 * configuration.screenHeightDp.dp
-        val menuMaxWidth = 0.8 * configuration.screenWidthDp.dp
-        
-        DropdownMenu(
-            expanded = isExpanded,
-            onDismissRequest = { onExpandedChange(false) },
-            modifier = Modifier
-                .widthIn(max = menuMaxWidth)
-                .heightIn(max = menuMaxHeight) // 限制最大高度为屏幕的70%
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
         ) {
-            speakers.forEach { speakerInfo ->
-                DropdownMenuItem(
-                    text = { Text(speakerInfo.name) },
-                    onClick = { onSpeakerSelect(speakerInfo) }
-                )
+            val configuration = LocalConfiguration.current
+            val menuMaxHeight = 0.7 * configuration.screenHeightDp.dp
+            val menuMaxWidth = 0.8 * configuration.screenWidthDp.dp
+            
+            DropdownMenu(
+                expanded = isExpanded,
+                onDismissRequest = { onExpandedChange(false) },
+                modifier = Modifier
+                    .widthIn(max = menuMaxWidth)
+                    .heightIn(max = menuMaxHeight),
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                speakers.forEach { speakerInfo ->
+                    DropdownMenuItem(
+                        text = { Text(speakerInfo.name) },
+                        onClick = { onSpeakerSelect(speakerInfo) },
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
             }
         }
     }
@@ -345,15 +468,35 @@ fun TextSynthesisInput(text: String, onTextChange: (String) -> Unit) {
 
 @Composable
 fun SynthesisButton(onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium
+    Card(
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Text(
-                text = stringResource(id = R.string.button_speak),
-                style = MaterialTheme.typography.titleMedium
+        Button(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            shape = MaterialTheme.shapes.medium,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = null
             )
+            Text(
+                text = stringResource(id = R.string.button_speak),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
     }
 }
 
