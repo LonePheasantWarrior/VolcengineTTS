@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -20,7 +19,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -41,14 +39,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import android.app.Application
-import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.AndroidViewModel
@@ -57,10 +53,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.github.lonepheasantwarrior.volcenginetts.ui.theme.VolcengineTTSTheme
-import com.github.lonepheasantwarrior.volcenginetts.ui.theme.SynthButtonLight
-import com.github.lonepheasantwarrior.volcenginetts.ui.theme.SynthButtonDark
-import com.github.lonepheasantwarrior.volcenginetts.ui.theme.SaveButtonLight
-import com.github.lonepheasantwarrior.volcenginetts.ui.theme.SaveButtonDark
 import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction
 
 class MainActivity : ComponentActivity() {
@@ -88,6 +80,7 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
     // 应用配置状态
     var appId by mutableStateOf(" ")
     var token by mutableStateOf(" ")
+    var serviceCluster by mutableStateOf("") //接口区域ID
     var textToSynthesize by mutableStateOf("")
 
     // UI 交互状态
@@ -124,14 +117,14 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
      * 保存设置到持久化存储
      */
     fun saveSettings() {
-        settingsFunction.saveSettings(appId, token, selectedSpeakerId)
+        settingsFunction.saveSettings(appId, token, selectedSpeakerId, serviceCluster)
     }
     
     /**
      * 从持久化存储加载设置
      */
     private fun loadSettings() {
-        val (savedAppId, savedToken, savedSelectedSpeakerId) = settingsFunction.getSettings()
+        val (savedAppId, savedToken, savedSelectedSpeakerId, savedServiceCluster) = settingsFunction.getSettings()
         if (savedAppId.isNotEmpty()) {
             appId = savedAppId
         }
@@ -140,6 +133,9 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
         }
         if (savedSelectedSpeakerId.isNotEmpty()) {
             selectedSpeakerId = savedSelectedSpeakerId
+        }
+        if (serviceCluster.isNotEmpty()) {
+            serviceCluster = savedServiceCluster
         }
     }
 
@@ -193,8 +189,11 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
         TTSConfigurationInputs(
             appId = viewModel.appId,
             token = viewModel.token,
+            serviceCluster = viewModel.serviceCluster,
+
             onAppIdChange = { viewModel.appId = it },
-            onTokenChange = { viewModel.token = it }
+            onTokenChange = { viewModel.token = it },
+            onServiceClusterChange = { viewModel.serviceCluster = it }
         )
         
         // 场景选择器
@@ -254,8 +253,11 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
 fun TTSConfigurationInputs(
     appId: String,
     token: String,
+    serviceCluster: String,
+
     onAppIdChange: (String) -> Unit,
-    onTokenChange: (String) -> Unit
+    onTokenChange: (String) -> Unit,
+    onServiceClusterChange: (String) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -289,6 +291,18 @@ fun TTSConfigurationInputs(
                 value = token,
                 onValueChange = onTokenChange,
                 label = { Text(stringResource(id = R.string.input_token)) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                )
+            )
+
+            // API资源ID 输入框
+            OutlinedTextField(
+                value = serviceCluster,
+                onValueChange = onServiceClusterChange,
+                label = { Text(stringResource(id = R.string.input_service_cluster)) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,

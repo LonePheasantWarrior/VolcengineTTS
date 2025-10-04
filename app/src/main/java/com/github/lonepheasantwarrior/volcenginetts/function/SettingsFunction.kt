@@ -3,6 +3,7 @@ package com.github.lonepheasantwarrior.volcenginetts.function
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import com.github.lonepheasantwarrior.volcenginetts.common.SettingsData
 
 /**
  * 设置相关功能
@@ -15,6 +16,7 @@ class SettingsFunction(private val context: Context) {
     private val appId = "app_id"
     private val token = "token"
     private val speakerId = "selected_speaker_id"
+    private val serviceCluster = "serviceCluster"
     
     /**
      * 获取SharedPreferences实例
@@ -28,24 +30,27 @@ class SettingsFunction(private val context: Context) {
      * @param appId 应用ID
      * @param token 令牌
      * @param selectedSpeakerId 选中的声音ID
+     * @param serviceCluster 接口服务簇
      */
-    fun saveSettings(appId: String, token: String, selectedSpeakerId: String) {
+    fun saveSettings(appId: String, token: String, selectedSpeakerId: String, serviceCluster: String) {
         getPreferences().edit {
             putString(this@SettingsFunction.appId, appId)
             putString(this@SettingsFunction.token, token)
             putString(speakerId, selectedSpeakerId)
+            putString(this@SettingsFunction.serviceCluster, serviceCluster)
         }
     }
     
     /**
      * 获取设置信息
-     * @return 包含appId、token和selectedSpeakerId的三元组
+     * @return 包含appId、token、selectedSpeakerId和serviceCluster的SettingsData对象
      */
-    fun getSettings(): Triple<String, String, String> {
+    fun getSettings(): SettingsData {
         val prefs = getPreferences()
         val appId = prefs.getString(appId, "") ?: ""
         val token = prefs.getString(token, "") ?: ""
         val selectedSpeakerId = prefs.getString(speakerId, "") ?: ""
-        return Triple(appId, token, selectedSpeakerId)
+        val serviceCluster = prefs.getString(this@SettingsFunction.serviceCluster, "") ?: ""
+        return SettingsData(appId, token, selectedSpeakerId, serviceCluster)
     }
 }

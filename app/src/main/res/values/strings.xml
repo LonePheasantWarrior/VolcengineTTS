@@ -4,9 +4,12 @@
     <string name="app_title">火山引擎语音合成</string>
     <string name="input_app_id">豆包语音合成服务App ID</string>
     <string name="input_token">豆包语音合成服务Token</string>
+    <string name="input_service_cluster">豆包语音合成服务所在簇ID</string>
     <string name="select_voice_scene">场景:</string>
     <string name="select_voice_item">声音:</string>
     <string name="input_text_for_speak">待合成文本</string>
     <string name="button_speak">朗读</string>
     <string name="save_settings">保存设置</string>
+    <string name="tts_service_address">wss://openspeech.bytedance.com</string>
+    <string name="tts_service_api_path">/api/v1/tts/ws_binary</string>
 </resources>
