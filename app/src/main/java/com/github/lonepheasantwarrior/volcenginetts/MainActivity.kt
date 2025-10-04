@@ -78,8 +78,8 @@ class MainActivity : ComponentActivity() {
 
 // 数据类 - 表示声音信息
 data class SpeakerInfo(
-    val name: String,  // 声音名称，如"甜美桃子"、"灿灿 / Shiny"
-    val id: String     // 声音ID，如"zh_female_tianmeitaozi_mars_bigtts"
+    val name: String,
+    val id: String
 )
 
 // ViewModel 类 - 负责状态管理和业务逻辑
