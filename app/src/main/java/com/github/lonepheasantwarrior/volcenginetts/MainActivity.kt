@@ -162,9 +162,6 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 标题
-        TTSHeader()
-        
         // 配置输入
         TTSConfigurationInputs(
             appId = viewModel.appId,
@@ -205,15 +202,6 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
                 speakerDropdownExpanded = false
             }
         )
-        
-        // 待合成文本输入框
-        TextSynthesisInput(
-            text = viewModel.textToSynthesize,
-            onTextChange = { viewModel.textToSynthesize = it }
-        )
-        
-        // 朗读按钮
-        SynthesisButton(onClick = { viewModel.synthesizeSpeech() })
 
         // 保存设置按钮
         Button(
@@ -222,29 +210,15 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
         ) {
             Text(stringResource(id = R.string.save_settings))
         }
-    }
-}
+        
+        // 待合成文本输入框
+        TextSynthesisInput(
+            text = viewModel.textToSynthesize,
+            onTextChange = { viewModel.textToSynthesize = it }
+        )
 
-// 可重用的UI组件样式
-@Composable
-fun TTSHeader() {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        )
-    ) {
-        Text(
-            text = stringResource(id = R.string.app_title),
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier
-                .padding(16.dp)
-                .align(Alignment.CenterHorizontally)
-        )
+        // 朗读按钮
+        SynthesisButton(onClick = { viewModel.synthesizeSpeech() })
     }
 }
 
