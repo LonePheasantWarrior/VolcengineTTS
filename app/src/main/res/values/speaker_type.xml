@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 声音列表数组 -->
+    <array name="speaker_list">
+        <!-- 客服场景音色 -->
+        <item>客服场景|暖阳女声|zh_female_kefunvsheng_mars_bigtts</item>
+
+        <!-- 通用场景音色 -->
+        <item>通用场景|甜美桃子|zh_female_tianmeitaozi_mars_bigtts</item>
+        <item>通用场景|灿灿 / Shiny|zh_female_cancan_mars_bigtts</item>
+        <item>通用场景|清新女声|zh_female_qingxinnvsheng_mars_bigtts</item>
+        <item>通用场景|爽快思思 / Skye|zh_female_shuangkuaisisi_moon_bigtts</item>
+        <item>通用场景|温暖阿虎 / Alvin|zh_male_wennuanahu_moon_bigtts</item>
+        <item>通用场景|少年梓辛 / Brayan|zh_male_shaonianzixin_moon_bigtts</item>
+        <item>通用场景|知性女声|zh_female_zhixingnvsheng_mars_bigtts</item>
+        <item>通用场景|清爽男大|zh_male_qingshuangnanda_mars_bigtts</item>
+        <item>通用场景|邻家女孩|zh_female_linjianvhai_moon_bigtts</item>
+        <item>通用场景|渊博小叔|zh_male_yuanboxiaoshu_moon_bigtts</item>
+        <item>通用场景|阳光青年|zh_male_yangguangqingnian_moon_bigtts</item>
+        <item>通用场景|甜美小源|zh_female_tianmeixiaoyuan_moon_bigtts</item>
+        <item>通用场景|清澈梓梓|zh_female_qingchezizi_moon_bigtts</item>
+        <item>通用场景|解说小明|zh_male_jieshuoxiaoming_moon_bigtts</item>
+        <item>通用场景|开朗姐姐|zh_female_kailangjiejie_moon_bigtts</item>
+        <item>通用场景|邻家男孩|zh_male_linjiananhai_moon_bigtts</item>
+        <item>通用场景|甜美悦悦|zh_female_tianmeiyueyue_moon_bigtts</item>
+        <item>通用场景|心灵鸡汤|zh_female_xinlingjitang_moon_bigtts</item>
+        <item>通用场景|知性温婉|ICL_zh_female_zhixingwenwan_tob</item>
+        <item>通用场景|暖心体贴|ICL_zh_male_nuanxintitie_tob</item>
+        <item>通用场景|温柔文雅|ICL_zh_female_wenrouwenya_tob</item>
+        <item>通用场景|开朗轻快|ICL_zh_male_kailangqingkuai_tob</item>
+        <item>通用场景|活泼爽朗|ICL_zh_male_huoposhuanglang_tob</item>
+        <item>通用场景|率真小伙|ICL_zh_male_shuaizhenxiaohuo_tob</item>
+        <item>通用场景|温柔小哥|zh_male_wenrouxiaoge_mars_bigtts</item>
+        <item>通用场景|亲切女声|zh_female_qinqienvsheng_moon_bigtts</item>
+        <item>通用场景|机灵小伙|ICL_zh_male_shenmi_v1_tob</item>
+        <item>通用场景|元气甜妹|ICL_zh_female_wuxi_tob</item>
+        <item>通用场景|知心姐姐|ICL_zh_female_wenyinvsheng_v1_tob</item>
+        <item>通用场景|阳光阿辰|zh_male_qingyiyuxuan_mars_bigtts</item>
+        <item>通用场景|快乐小东|zh_male_xudong_conversation_wvae_bigtts</item>
+        <item>通用场景|冷酷哥哥|ICL_zh_male_lengkugege_v1_tob</item>
+        <item>通用场景|纯澈女生|ICL_zh_female_feicui_v1_tob</item>
+        <item>通用场景|初恋女友|ICL_zh_female_yuxin_v1_tob</item>
+        <item>通用场景|贴心闺蜜|ICL_zh_female_xnx_tob</item>
+        <item>通用场景|温柔白月光|ICL_zh_female_yry_tob</item>
+        <item>通用场景|开朗学长|en_male_jason_conversation_wvae_bigtts</item>
+        <item>通用场景|魅力苏菲|zh_female_sophie_conversation_wvae_bigtts</item>
+        <item>通用场景|贴心妹妹|ICL_zh_female_yilin_tob</item>
+
+        <!-- 多情感场景音色 -->
+        <item>多情感|北京小爷|zh_male_beijingxiaoye_emo_v2_mars_bigtts</item>
+        <item>多情感|柔美女友|zh_female_roumeinvyou_emo_v2_mars_bigtts</item>
+        <item>多情感|阳光青年|zh_male_yangguangqingnian_emo_v2_mars_bigtts</item>
+        <item>多情感|魅力女友|zh_female_meilinvyou_emo_v2_mars_bigtts</item>
+        <item>多情感|爽快思思|zh_female_shuangkuaisisi_emo_v2_mars_bigtts</item>
+        <item>多情感|甜心小美|zh_female_tianxinxiaomei_emo_v2_mars_bigtts</item>
+        <item>多情感|高冷御姐|zh_female_gaolengyujie_emo_v2_mars_bigtts</item>
+        <item>多情感|傲娇霸总|zh_male_aojiaobazong_emo_v2_mars_bigtts</item>
+        <item>多情感|广州德哥|zh_male_guangzhoudege_emo_mars_bigtts</item>
+        <item>多情感|京腔侃爷|zh_male_jingqiangkanye_emo_mars_bigtts</item>
+        <item>多情感|邻居阿姨|zh_female_linjuayi_emo_v2_mars_bigtts</item>
+        <item>多情感|优柔公子|zh_male_yourougongzi_emo_v2_mars_bigtts</item>
+        <item>多情感|儒雅男友|zh_male_ruyayichen_emo_v2_mars_bigtts</item>
+        <item>多情感|俊朗男友|zh_male_junlangnanyou_emo_v2_mars_bigtts</item>
+    </array>
+
+    <!-- 场景分类数组 -->
+    <array name="scene_categories">
+        <item>多情感</item>
+        <item>客服场景</item>
+        <item>通用场景</item>
+    </array>
+</resources>
