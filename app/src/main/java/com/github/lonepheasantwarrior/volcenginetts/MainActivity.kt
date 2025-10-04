@@ -61,6 +61,7 @@ import com.github.lonepheasantwarrior.volcenginetts.ui.theme.SynthButtonLight
 import com.github.lonepheasantwarrior.volcenginetts.ui.theme.SynthButtonDark
 import com.github.lonepheasantwarrior.volcenginetts.ui.theme.SaveButtonLight
 import com.github.lonepheasantwarrior.volcenginetts.ui.theme.SaveButtonDark
+import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,6 +94,14 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
     var selectedScene by mutableStateOf("")
     var selectedSpeakerId by mutableStateOf("") // 存储选中的声音ID
     var selectedSpeakerName by mutableStateOf("") // 存储选中的声音名称
+    
+    // 设置功能实例
+    private val settingsFunction = SettingsFunction(application)
+    
+    init {
+        // 初始化时加载保存的设置
+        loadSettings()
+    }
 
     // 从资源获取的静态数据
     fun getSceneCategories(): Array<String> {
@@ -111,9 +120,27 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
             .map { SpeakerInfo(name = it[1], id = it[2]) }
     }
 
+    /**
+     * 保存设置到持久化存储
+     */
     fun saveSettings() {
-        // 保存设置的业务逻辑
-        // 实际应用中这里会调用存储API
+        settingsFunction.saveSettings(appId, token, selectedSpeakerId)
+    }
+    
+    /**
+     * 从持久化存储加载设置
+     */
+    private fun loadSettings() {
+        val (savedAppId, savedToken, savedSelectedSpeakerId) = settingsFunction.getSettings()
+        if (savedAppId.isNotEmpty()) {
+            appId = savedAppId
+        }
+        if (savedToken.isNotEmpty()) {
+            token = savedToken
+        }
+        if (savedSelectedSpeakerId.isNotEmpty()) {
+            selectedSpeakerId = savedSelectedSpeakerId
+        }
     }
 
     fun synthesizeSpeech() {
