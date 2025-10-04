@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -34,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import android.app.Application
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -199,7 +199,7 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
             onClick = { viewModel.saveSettings() },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("保存设置")
+            Text(stringResource(id = R.string.save_settings))
         }
     }
 }
@@ -208,7 +208,7 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
 @Composable
 fun TTSHeader() {
     Text(
-        text = "火山引擎语音合成",
+        text = stringResource(id = R.string.app_title),
         style = MaterialTheme.typography.headlineLarge,
         modifier = Modifier.padding(bottom = 24.dp)
     )
@@ -222,20 +222,20 @@ fun TTSConfigurationInputs(
     onTokenChange: (String) -> Unit
 ) {
     // App ID 输入框
-    OutlinedTextField(
-        value = appId,
-        onValueChange = onAppIdChange,
-        label = { Text("语音合成服务App ID") },
-        modifier = Modifier.fillMaxWidth()
-    )
-    
-    // Token 输入框
-    OutlinedTextField(
-        value = token,
-        onValueChange = onTokenChange,
-        label = { Text("语音合成服务Token") },
-        modifier = Modifier.fillMaxWidth()
-    )
+        OutlinedTextField(
+            value = appId,
+            onValueChange = onAppIdChange,
+            label = { Text(stringResource(id = R.string.input_app_id)) },
+            modifier = Modifier.fillMaxWidth()
+        )
+        
+        // Token 输入框
+        OutlinedTextField(
+            value = token,
+            onValueChange = onTokenChange,
+            label = { Text(stringResource(id = R.string.input_token)) },
+            modifier = Modifier.fillMaxWidth()
+        )
 }
 
 @Composable
@@ -251,7 +251,7 @@ fun TTSSceneSelector(
         horizontalAlignment = Alignment.Start
     ) {
         Text(
-            text = "场景:",
+            text = stringResource(id = R.string.select_voice_scene),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -297,7 +297,7 @@ fun TTSSpeakerSelector(
         horizontalAlignment = Alignment.Start
     ) {
         Text(
-            text = "声音:",
+            text = stringResource(id = R.string.select_voice_item),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -333,14 +333,14 @@ fun TTSSpeakerSelector(
 @Composable
 fun TextSynthesisInput(text: String, onTextChange: (String) -> Unit) {
     OutlinedTextField(
-        value = text,
-        onValueChange = onTextChange,
-        label = { Text("待合成文本") },
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 120.dp),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
-    )
+            value = text,
+            onValueChange = onTextChange,
+            label = { Text(stringResource(id = R.string.input_text_for_speak)) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 120.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+        )
 }
 
 @Composable
@@ -351,9 +351,9 @@ fun SynthesisButton(onClick: () -> Unit) {
         shape = MaterialTheme.shapes.medium
     ) {
         Text(
-            text = "朗读",
-            style = MaterialTheme.typography.titleMedium
-        )
+                text = stringResource(id = R.string.button_speak),
+                style = MaterialTheme.typography.titleMedium
+            )
     }
 }
 
