@@ -2,9 +2,6 @@
 <resources>
     <!-- 声音列表数组 -->
     <array name="speaker_list">
-        <!-- 客服场景音色 -->
-        <item>客服场景|暖阳女声|zh_female_kefunvsheng_mars_bigtts</item>
-
         <!-- 通用场景音色 -->
         <item>通用场景|甜美桃子|zh_female_tianmeitaozi_mars_bigtts</item>
         <item>通用场景|灿灿 / Shiny|zh_female_cancan_mars_bigtts</item>
@@ -61,12 +58,15 @@
         <item>多情感|优柔公子|zh_male_yourougongzi_emo_v2_mars_bigtts</item>
         <item>多情感|儒雅男友|zh_male_ruyayichen_emo_v2_mars_bigtts</item>
         <item>多情感|俊朗男友|zh_male_junlangnanyou_emo_v2_mars_bigtts</item>
+
+        <!-- 客服场景音色 -->
+        <item>客服场景|暖阳女声|zh_female_kefunvsheng_mars_bigtts</item>
     </array>
 
     <!-- 场景分类数组 -->
     <array name="scene_categories">
+        <item>通用场景</item>
         <item>多情感</item>
         <item>客服场景</item>
-        <item>通用场景</item>
     </array>
 </resources>

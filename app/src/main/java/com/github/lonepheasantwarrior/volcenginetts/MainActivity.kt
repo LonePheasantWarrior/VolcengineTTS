@@ -179,10 +179,11 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
             onSceneSelect = { scene ->
                 viewModel.selectedScene = scene
                 sceneDropdownExpanded = false
-                // 重置选中的声音
-                if (filteredSpeakers.isNotEmpty()) {
-                    viewModel.selectedSpeakerId = filteredSpeakers.first().id
-                    viewModel.selectedSpeakerName = filteredSpeakers.first().name
+                // 获取新场景的声音列表并设置为第一个声音选项
+                val newFilteredSpeakers = viewModel.filterSpeakersByScene(scene)
+                if (newFilteredSpeakers.isNotEmpty()) {
+                    viewModel.selectedSpeakerId = newFilteredSpeakers.first().id
+                    viewModel.selectedSpeakerName = newFilteredSpeakers.first().name
                 } else {
                     viewModel.selectedSpeakerId = ""
                     viewModel.selectedSpeakerName = ""
