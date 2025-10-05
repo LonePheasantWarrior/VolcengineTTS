@@ -30,6 +30,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -50,6 +51,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.BorderStroke
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -92,20 +94,53 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
 
     // 应用配置状态
     var appId by mutableStateOf(" ")
+        private set
     var token by mutableStateOf(" ")
+        private set
     var serviceCluster by mutableStateOf("") //接口区域ID
+        private set
     var isEmotional by mutableStateOf(false) // 感情朗读开关
 
     // UI 交互状态
     var selectedScene by mutableStateOf("")
     var selectedSpeakerId by mutableStateOf("") // 存储选中的声音ID
     var selectedSpeakerName by mutableStateOf("") // 存储选中的声音名称
-
+    
     // 错误状态 - 用于UI提示
     var isAppIdError by mutableStateOf(false)
     var isTokenError by mutableStateOf(false)
     var isServiceClusterError by mutableStateOf(false)
     var isSpeakerError by mutableStateOf(false)
+    
+    // 自定义方法以在输入时清除错误状态
+    fun updateAppId(value: String) {
+        appId = value
+        if (isAppIdError && value.isNotBlank()) {
+            isAppIdError = false
+        }
+    }
+    
+    fun updateToken(value: String) {
+        token = value
+        if (isTokenError && value.isNotBlank()) {
+            isTokenError = false
+        }
+    }
+    
+    fun updateServiceCluster(value: String) {
+        serviceCluster = value
+        if (isServiceClusterError && value.isNotBlank()) {
+            isServiceClusterError = false
+        }
+    }
+    
+    fun updateSelectedSpeakerIdAndName(id: String, name: String) {
+        selectedSpeakerId = id
+        selectedSpeakerName = name
+        if (isSpeakerError && id.isNotBlank()) {
+            isSpeakerError = false
+        }
+    }
 
     init {
         // 初始化时加载保存的设置
@@ -201,7 +236,7 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
             // 根据保存的声音ID查找对应的声音名称
             findSpeakerNameById(savedSelectedSpeakerId)
         }
-        if (serviceCluster.isNotEmpty()) {
+        if (savedServiceCluster.isNotEmpty()) {
             serviceCluster = savedServiceCluster
         }
         isEmotional = savedIsEmotional
@@ -277,9 +312,9 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
                     isAppIdError = viewModel.isAppIdError,
                     isTokenError = viewModel.isTokenError,
                     isServiceClusterError = viewModel.isServiceClusterError,
-                    onAppIdChange = { viewModel.appId = it },
-                    onTokenChange = { viewModel.token = it },
-                    onServiceClusterChange = { viewModel.serviceCluster = it }
+                    onAppIdChange = { viewModel.updateAppId(it) },
+                    onTokenChange = { viewModel.updateToken(it) },
+                    onServiceClusterChange = { viewModel.updateServiceCluster(it) }
                 )
             }
 
@@ -302,16 +337,13 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
                         // 获取新场景的声音列表并设置为第一个声音选项
                         val newFilteredSpeakers = viewModel.filterSpeakersByScene(scene)
                         if (newFilteredSpeakers.isNotEmpty()) {
-                            viewModel.selectedSpeakerId = newFilteredSpeakers.first().id
-                            viewModel.selectedSpeakerName = newFilteredSpeakers.first().name
+                            viewModel.updateSelectedSpeakerIdAndName(newFilteredSpeakers.first().id, newFilteredSpeakers.first().name)
                         } else {
-                            viewModel.selectedSpeakerId = ""
-                            viewModel.selectedSpeakerName = ""
+                            viewModel.updateSelectedSpeakerIdAndName("", "")
                         }
                     },
                     onSpeakerSelect = { speakerInfo ->
-                        viewModel.selectedSpeakerName = speakerInfo.name
-                        viewModel.selectedSpeakerId = speakerInfo.id
+                        viewModel.updateSelectedSpeakerIdAndName(speakerInfo.id, speakerInfo.name)
                         speakerDropdownExpanded = false
                     },
                     onIsEmotionalChange = { viewModel.isEmotional = it }
@@ -489,35 +521,26 @@ fun TTSVoiceConfigurationInputs(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                Card(
+                OutlinedButton(
+                    onClick = { onSceneExpandedChange(true) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    )
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                 ) {
-                    Button(
-                        onClick = { onSceneExpandedChange(true) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-                    ) {
-                        Text(
-                            text = selectedScene,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = null
-                        )
-                    }
+                    Text(
+                        text = selectedScene,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = null
+                    )
                 }
 
                 AnimatedVisibility(
@@ -559,37 +582,28 @@ fun TTSVoiceConfigurationInputs(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                Card(
+                OutlinedButton(
+                    onClick = { onSpeakerExpandedChange(true) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSpeakerError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant,
-                    )
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = if (isSpeakerError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                    ),
+                    border = BorderStroke(1.dp, if (isSpeakerError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                 ) {
-                    Button(
-                        onClick = { onSpeakerExpandedChange(true) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = if (isSpeakerError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-                    ) {
-                        Text(
-                            text = selectedSpeakerName.ifEmpty { "请选择声音" },
-                            modifier = Modifier.weight(1f),
-                            color = if (isSpeakerError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = null,
-                            tint = if (isSpeakerError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
+                    Text(
+                        text = selectedSpeakerName.ifEmpty { "请选择声音" },
+                        modifier = Modifier.weight(1f),
+                        color = if (isSpeakerError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                    )
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        tint = if (isSpeakerError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                    )
                 }
 
                 // 声音选择错误提示
