@@ -93,18 +93,18 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
     private val settingsFunction: SettingsFunction get() = (getApplication() as TTSApplication).settingsFunction
 
     // 应用配置状态
-    var appId by mutableStateOf(" ")
+    var appId by mutableStateOf("")
         private set
-    var token by mutableStateOf(" ")
+    var token by mutableStateOf("")
         private set
-    var serviceCluster by mutableStateOf("") //接口区域ID
+    var serviceCluster by mutableStateOf("")
         private set
-    var isEmotional by mutableStateOf(false) // 感情朗读开关
+    var isEmotional by mutableStateOf(false)
 
     // UI 交互状态
     var selectedScene by mutableStateOf("")
-    var selectedSpeakerId by mutableStateOf("") // 存储选中的声音ID
-    var selectedSpeakerName by mutableStateOf("") // 存储选中的声音名称
+    var selectedSpeakerId by mutableStateOf("")
+    var selectedSpeakerName by mutableStateOf("")
     
     // 错误状态 - 用于UI提示
     var isAppIdError by mutableStateOf(false)
