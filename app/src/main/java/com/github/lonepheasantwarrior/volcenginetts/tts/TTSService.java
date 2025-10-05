@@ -112,10 +112,10 @@ public class TTSService extends TextToSpeechService {
                 }
                 byte[] chunk = ttsContext.audioDataQueue.poll(100, TimeUnit.MILLISECONDS);
                 if (chunk != null) {
+                    Log.d(LogTag.INFO, "向系统TTS服务提供音频Callback,数据长度: " + chunk.length);
                     int offset = 0;
                     while (offset < chunk.length) {
                         int chunkSize = Math.min(callback.getMaxBufferSize(), chunk.length - offset);
-                        Log.d(LogTag.INFO, "向系统TTS服务提供音频Callback,数据长度: " + chunkSize);
                         callback.audioAvailable(chunk, offset, chunkSize);
                         offset += chunkSize;
                     }
