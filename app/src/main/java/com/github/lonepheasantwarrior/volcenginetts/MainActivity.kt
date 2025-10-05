@@ -198,25 +198,27 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 配置输入
-        TTSConfigurationInputs(
+        // 基础配置组 (appId, token, serviceCluster)
+        TTSBasicConfigurationInputs(
             appId = viewModel.appId,
             token = viewModel.token,
             serviceCluster = viewModel.serviceCluster,
-            isEmotional = viewModel.isEmotional,
-
             onAppIdChange = { viewModel.appId = it },
             onTokenChange = { viewModel.token = it },
-            onServiceClusterChange = { viewModel.serviceCluster = it },
-            onIsEmotionalChange = { viewModel.isEmotional = it }
+            onServiceClusterChange = { viewModel.serviceCluster = it }
         )
         
-        // 场景选择器
-        TTSSceneSelector(
+        // 场景和声音配置组 (selectedScene, selectedSpeakerName, isEmotional)
+        TTSVoiceConfigurationInputs(
             selectedScene = viewModel.selectedScene,
             sceneCategories = sceneCategories,
-            isExpanded = sceneDropdownExpanded,
-            onExpandedChange = { sceneDropdownExpanded = it },
+            selectedSpeakerName = viewModel.selectedSpeakerName,
+            speakers = filteredSpeakers,
+            isEmotional = viewModel.isEmotional,
+            sceneDropdownExpanded = sceneDropdownExpanded,
+            speakerDropdownExpanded = speakerDropdownExpanded,
+            onSceneExpandedChange = { sceneDropdownExpanded = it },
+            onSpeakerExpandedChange = { speakerDropdownExpanded = it },
             onSceneSelect = { scene ->
                 viewModel.selectedScene = scene
                 sceneDropdownExpanded = false
@@ -229,51 +231,30 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
                     viewModel.selectedSpeakerId = ""
                     viewModel.selectedSpeakerName = ""
                 }
-            }
-        )
-        
-        // 声音选择器
-        TTSSpeakerSelector(
-            selectedSpeakerName = viewModel.selectedSpeakerName,
-            speakers = filteredSpeakers,
-            isExpanded = speakerDropdownExpanded,
-            onExpandedChange = { speakerDropdownExpanded = it },
+            },
             onSpeakerSelect = { speakerInfo ->
                 viewModel.selectedSpeakerName = speakerInfo.name
                 viewModel.selectedSpeakerId = speakerInfo.id
                 speakerDropdownExpanded = false
-            }
+            },
+            onIsEmotionalChange = { viewModel.isEmotional = it }
         )
 
-        // 保存设置按钮
-        Button(
-            onClick = { viewModel.saveSettings() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(stringResource(id = R.string.save_settings))
-        }
-        
-        // 待合成文本输入框
-        TextSynthesisInput(
-            text = viewModel.textToSynthesize,
-            onTextChange = { viewModel.textToSynthesize = it }
+        // 保存设置按钮组
+        TTSSaveSettingsButton(
+            onClick = { viewModel.saveSettings() }
         )
-
-        // 朗读按钮
-        SynthesisButton(onClick = { viewModel.synthesizeSpeech() })
     }
 }
 
 @Composable
-fun TTSConfigurationInputs(
+fun TTSBasicConfigurationInputs(
     appId: String,
     token: String,
     serviceCluster: String,
-    isEmotional: Boolean,
     onAppIdChange: (String) -> Unit,
     onTokenChange: (String) -> Unit,
-    onServiceClusterChange: (String) -> Unit,
-    onIsEmotionalChange: (Boolean) -> Unit
+    onServiceClusterChange: (String) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -290,6 +271,13 @@ fun TTSConfigurationInputs(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Text(
+                text = "基础配置",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.primary
+            )
+            
             // App ID 输入框
             OutlinedTextField(
                 value = appId,
@@ -325,6 +313,186 @@ fun TTSConfigurationInputs(
                     unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 )
             )
+        }
+    }
+}
+
+@Composable
+fun TTSVoiceConfigurationInputs(
+    selectedScene: String,
+    sceneCategories: Array<String>,
+    selectedSpeakerName: String,
+    speakers: List<SpeakerInfo>,
+    isEmotional: Boolean,
+    sceneDropdownExpanded: Boolean,
+    speakerDropdownExpanded: Boolean,
+    onSceneExpandedChange: (Boolean) -> Unit,
+    onSpeakerExpandedChange: (Boolean) -> Unit,
+    onSceneSelect: (String) -> Unit,
+    onSpeakerSelect: (SpeakerInfo) -> Unit,
+    onIsEmotionalChange: (Boolean) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "语音配置",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.primary
+            )
+            
+            // 场景选择器
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = stringResource(id = R.string.select_voice_scene),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                ) {
+                    Button(
+                        onClick = { onSceneExpandedChange(true) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                    ) {
+                        Text(
+                            text = selectedScene,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null
+                        )
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = sceneDropdownExpanded,
+                    enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+                    exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
+                ) {
+                    val configuration = LocalConfiguration.current
+                    val menuMaxHeight = 0.7 * configuration.screenHeightDp.dp
+                    val menuMaxWidth = 0.8 * configuration.screenWidthDp.dp
+                    
+                    DropdownMenu(
+                        expanded = sceneDropdownExpanded,
+                        onDismissRequest = { onSceneExpandedChange(false) },
+                        modifier = Modifier
+                            .widthIn(max = menuMaxWidth)
+                            .heightIn(max = menuMaxHeight),
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ) {
+                        sceneCategories.forEach { scene ->
+                            DropdownMenuItem(
+                                text = { Text(scene) },
+                                onClick = { onSceneSelect(scene) },
+                                modifier = Modifier.padding(8.dp)
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // 声音选择器
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = stringResource(id = R.string.select_voice_item),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                ) {
+                    Button(
+                        onClick = { onSpeakerExpandedChange(true) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                    ) {
+                        Text(
+                            text = selectedSpeakerName,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null
+                        )
+                    }
+                }
+                
+                AnimatedVisibility(
+                    visible = speakerDropdownExpanded,
+                    enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+                    exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
+                ) {
+                    val configuration = LocalConfiguration.current
+                    val menuMaxHeight = 0.7 * configuration.screenHeightDp.dp
+                    val menuMaxWidth = 0.8 * configuration.screenWidthDp.dp
+                    
+                    DropdownMenu(
+                        expanded = speakerDropdownExpanded,
+                        onDismissRequest = { onSpeakerExpandedChange(false) },
+                        modifier = Modifier
+                            .widthIn(max = menuMaxWidth)
+                            .heightIn(max = menuMaxHeight),
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ) {
+                        speakers.forEach { speakerInfo ->
+                            DropdownMenuItem(
+                                text = { Text(speakerInfo.name) },
+                                onClick = { onSpeakerSelect(speakerInfo) },
+                                modifier = Modifier.padding(8.dp)
+                            )
+                        }
+                    }
+                }
+            }
             
             // 情感朗读开关
             Row(
@@ -356,177 +524,19 @@ fun TTSConfigurationInputs(
     }
 }
 
+@Preview(showBackground = true)
 @Composable
-fun TTSSceneSelector(
-    selectedScene: String,
-    sceneCategories: Array<String>,
-    isExpanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    onSceneSelect: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.Start
-    ) {
-        Text(
-            text = stringResource(id = R.string.select_voice_scene),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            )
-        ) {
-            Button(
-                onClick = { onExpandedChange(true) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-            ) {
-                Text(
-                    text = selectedScene,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null
-                )
-            }
-        }
-
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
-        ) {
-            val configuration = LocalConfiguration.current
-            val menuMaxHeight = 0.7 * configuration.screenHeightDp.dp
-            val menuMaxWidth = 0.8 * configuration.screenWidthDp.dp
-            
-            DropdownMenu(
-                expanded = isExpanded,
-                onDismissRequest = { onExpandedChange(false) },
-                modifier = Modifier
-                    .widthIn(max = menuMaxWidth)
-                    .heightIn(max = menuMaxHeight),
-                containerColor = MaterialTheme.colorScheme.surface
-            ) {
-                sceneCategories.forEach { scene ->
-                    DropdownMenuItem(
-                        text = { Text(scene) },
-                        onClick = { onSceneSelect(scene) },
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-            }
-        }
+fun VolcengineTTSPreview() {
+    VolcengineTTSTheme {
+        VolcengineTTSUI()
     }
 }
 
+
 @Composable
-fun TTSSpeakerSelector(
-    selectedSpeakerName: String,
-    speakers: List<SpeakerInfo>,
-    isExpanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    onSpeakerSelect: (SpeakerInfo) -> Unit
+fun TTSSaveSettingsButton(
+    onClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.Start
-    ) {
-        Text(
-            text = stringResource(id = R.string.select_voice_item),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            )
-        ) {
-            Button(
-                onClick = { onExpandedChange(true) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-            ) {
-                Text(
-                    text = selectedSpeakerName,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null
-                )
-            }
-        }
-        
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
-        ) {
-            val configuration = LocalConfiguration.current
-            val menuMaxHeight = 0.7 * configuration.screenHeightDp.dp
-            val menuMaxWidth = 0.8 * configuration.screenWidthDp.dp
-            
-            DropdownMenu(
-                expanded = isExpanded,
-                onDismissRequest = { onExpandedChange(false) },
-                modifier = Modifier
-                    .widthIn(max = menuMaxWidth)
-                    .heightIn(max = menuMaxHeight),
-                containerColor = MaterialTheme.colorScheme.surface
-            ) {
-                speakers.forEach { speakerInfo ->
-                    DropdownMenuItem(
-                        text = { Text(speakerInfo.name) },
-                        onClick = { onSpeakerSelect(speakerInfo) },
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun TextSynthesisInput(text: String, onTextChange: (String) -> Unit) {
-    OutlinedTextField(
-            value = text,
-            onValueChange = onTextChange,
-            label = { Text(stringResource(id = R.string.input_text_for_speak)) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 120.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
-        )
-}
-
-@Composable
-fun SynthesisButton(onClick: () -> Unit) {
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
@@ -546,23 +556,10 @@ fun SynthesisButton(onClick: () -> Unit) {
             ),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = null
-            )
             Text(
-                text = stringResource(id = R.string.button_speak),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(start = 8.dp)
+                text = stringResource(id = R.string.save_settings),
+                style = MaterialTheme.typography.titleMedium
             )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun VolcengineTTSPreview() {
-    VolcengineTTSTheme {
-        VolcengineTTSUI()
     }
 }
