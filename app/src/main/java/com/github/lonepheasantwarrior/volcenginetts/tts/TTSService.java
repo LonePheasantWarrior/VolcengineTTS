@@ -107,13 +107,7 @@ public class TTSService extends TextToSpeechService {
                     , AudioFormat.ENCODING_PCM_16BIT, 1 /* Number of channels. */);
 
             Log.d(LogTag.INFO, "开始监听语音合成音频回调队列...");
-            long startTime = System.currentTimeMillis();
-            while (true) {
-                final long TIMEOUT_MS = 15000;
-                if (System.currentTimeMillis() - startTime > TIMEOUT_MS) {
-                    Log.e(LogTag.ERROR, "监听语音合成音频回调超时,放弃本次合成任务");
-                    break;
-                }
+            do {
                 byte[] chunk = ttsContext.audioDataQueue.take();
                 // 检查是否是控制信号（空字节数组）
                 if (chunk != null && chunk != CONTROL_SIGNAL && chunk.length > 0) {
@@ -126,8 +120,7 @@ public class TTSService extends TextToSpeechService {
                     }
                 }
                 Log.d(LogTag.INFO, "音频队列是否消费完成: " + ttsContext.isAudioQueueDone.get());
-                if (ttsContext.isAudioQueueDone.get()) break;
-            }
+            } while (!ttsContext.isAudioQueueDone.get());
             if (ttsContext.isTTSEngineError.get()) {
                 callback.error();
             }else {
@@ -139,7 +132,7 @@ public class TTSService extends TextToSpeechService {
         }
         synthesisEngine.destroy();
 
-        Log.d(LogTag.INFO, "语音合成任务执行完毕,耗时: " + (System.currentTimeMillis() - onSynthesizeStartTime) / 1000);
+        Log.d(LogTag.INFO, "语音合成任务执行完毕,耗时: " + (System.currentTimeMillis() - onSynthesizeStartTime) / 1000 + "秒");
     }
 
     public static int getIsLanguageAvailable(String lang, String country, String variant) {
