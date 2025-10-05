@@ -1,23 +1,38 @@
 package com.github.lonepheasantwarrior.volcenginetts.tts;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.speech.tts.SynthesisCallback;
 import android.speech.tts.SynthesisRequest;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeechService;
+import android.widget.Toast;
 
 import com.github.lonepheasantwarrior.volcenginetts.TTSApplication;
 import com.github.lonepheasantwarrior.volcenginetts.common.Constants;
+import com.github.lonepheasantwarrior.volcenginetts.common.SettingsData;
 import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine;
+import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction;
 
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TTSService extends TextToSpeechService {
     @Nullable
     private volatile String[] mCurrentLanguage = null;
 
-    private final SynthesisEngine synthesisEngine = ((TTSApplication) getApplicationContext()).getSynthesisEngine();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    private final TTSApplication ttsApplication = ((TTSApplication) getApplicationContext());
+
+    private final SynthesisEngine synthesisEngine = ttsApplication.getSynthesisEngine();
+    private final SettingsFunction settingsFunction = ttsApplication.getSettingsFunction();
+
+    private final BlockingQueue<byte[]> audioDataQueue = ttsApplication.getAudioDataQueue();
+    private final AtomicBoolean isAudioQueueDone = ttsApplication.isAudioQueueDone();
 
     @Override
     protected String[] onGetLanguage() {
@@ -50,7 +65,29 @@ public class TTSService extends TextToSpeechService {
 
     @Override
     protected void onSynthesizeText(SynthesisRequest request, SynthesisCallback callback) {
+        SettingsData settings = settingsFunction.getSettings();
+        if (!checkSettings(settings)) {
+            callback.error();
+            return;
+        }
+        synthesisEngine.create(settings.getAppId(), settings.getToken(), settings.getSelectedSpeakerId(), settings.getServiceCluster(), settings.isEmotional());
+        synthesisEngine.startEngine(request.getCharSequenceText(), request.getSpeechRate(), null, request.getPitch());
 
+        try {
+            while (true) {
+                byte[] chunk = audioDataQueue.take();
+                if (isAudioQueueDone.get()) break;
+                int offset = 0;
+                while (offset < chunk.length) {
+                    int chunkSize = Math.min(callback.getMaxBufferSize(), chunk.length - offset);
+                    callback.audioAvailable(chunk, offset, chunkSize);
+                    offset += chunkSize;
+                }
+            }
+            callback.done();
+        } catch (Exception e) {
+            callback.error();
+        }
     }
 
     public static int getIsLanguageAvailable(String lang, String country, String variant) {
@@ -78,5 +115,24 @@ public class TTSService extends TextToSpeechService {
             return TextToSpeech.LANG_AVAILABLE;
         }
         return TextToSpeech.LANG_NOT_SUPPORTED;
+    }
+
+    /**
+     * 检查配置是否有效
+     *
+     * @param settings 待检查配置
+     * @return 检查结果
+     */
+    private boolean checkSettings(SettingsData settings) {
+        if (settings == null) {
+            mainHandler.post(() -> Toast.makeText(getApplicationContext(), "语音引擎未配置", Toast.LENGTH_SHORT).show());
+            return false;
+        }
+        if (settings.getAppId().isBlank() || settings.getToken().isBlank()
+                || settings.getServiceCluster().isBlank() || settings.getSelectedSpeakerId().isBlank()) {
+            mainHandler.post(() -> Toast.makeText(getApplicationContext(), "语音引擎配置不可用", Toast.LENGTH_SHORT).show());
+            return false;
+        }
+        return true;
     }
 }

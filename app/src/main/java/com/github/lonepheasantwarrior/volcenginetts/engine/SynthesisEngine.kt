@@ -15,6 +15,7 @@ import com.github.lonepheasantwarrior.volcenginetts.common.Constants
 import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 语音合成引擎
@@ -25,6 +26,7 @@ class SynthesisEngine(private val context: Context) {
     private var isParametersBeenSet: Boolean = false
     private val mainHandler = Handler(Looper.getMainLooper())
     private val synthesisEngineListener: SynthesisEngineListener get() = (context as TTSApplication).synthesisEngineListener
+    private val isAudioQueueDone: AtomicBoolean get() = (context as TTSApplication).isAudioQueueDone
 
     /**
      * 初始化语音合成引擎
@@ -136,12 +138,19 @@ class SynthesisEngine(private val context: Context) {
     /**
      * 启动引擎
      */
-    private fun startEngine(
+    fun startEngine(
         text: CharSequence?,
         speedRatio: Int?,
         volumeRatio: Int?,
         pitchRatio: Int?
     ) {
+        if (!isInitialized) {
+            Log.e(LogTag.SDK_ERROR, "语音合成引擎未初始化,无法执行合成参数配置操作")
+            mainHandler.post {
+                Toast.makeText(context, "语音合成引擎未初始化", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         // Directive：启动引擎前调用SYNC_STOP指令，保证前一次请求结束。
         var ret = mSpeechEngine!!.sendDirective(SpeechEngineDefines.DIRECTIVE_SYNC_STOP_ENGINE, "")
         if (ret != SpeechEngineDefines.ERR_NO_ERROR) {
@@ -167,6 +176,8 @@ class SynthesisEngine(private val context: Context) {
                 }
             }
         }
+
+        isAudioQueueDone.set(false)
     }
 
     /**
@@ -178,9 +189,6 @@ class SynthesisEngine(private val context: Context) {
         volumeRatio: Int?,
         pitchRatio: Int?
     ) {
-        if (!isInitialized) {
-            throw RuntimeException("语音合成引擎未初始化,无法执行合成参数配置操作")
-        }
         if (text.isNullOrBlank()) {
             Log.e(LogTag.ERROR, "待合成文本为空")
             mainHandler.post {
@@ -223,13 +231,6 @@ class SynthesisEngine(private val context: Context) {
         }
 
         isParametersBeenSet = true
-    }
-
-    /**
-     * 是否已创建
-     */
-    fun isCreated(): Boolean {
-        return isInitialized
     }
 
     /**

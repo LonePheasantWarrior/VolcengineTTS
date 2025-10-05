@@ -6,13 +6,19 @@ import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import com.bytedance.speech.speechengine.SpeechEngineDefines
+import com.github.lonepheasantwarrior.volcenginetts.TTSApplication
 import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 语音合成引擎回调监听服务
  */
 class SynthesisEngineListener(private val context: Context): com.bytedance.speech.speechengine.SpeechEngine.SpeechListener {
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    private val audioDataQueue: BlockingQueue<ByteArray?> get() = (context as TTSApplication).audioDataQueue
+    private val isAudioQueueDone: AtomicBoolean get() = (context as TTSApplication).isAudioQueueDone
 
     override fun onSpeechMessage(type: Int, data: ByteArray?, len: Int) {
         var stdData = ""
@@ -62,6 +68,8 @@ class SynthesisEngineListener(private val context: Context): com.bytedance.speec
                     dataSize = data.size
                 }
                 Log.d(LogTag.SDK_INFO, "引擎音频数据通知, 数据大小: $dataSize")
+                audioDataQueue.put(data)
+                isAudioQueueDone.set(false)
             }
 
             SpeechEngineDefines.MESSAGE_TYPE_TTS_AUDIO_DATA_END -> {
@@ -70,6 +78,8 @@ class SynthesisEngineListener(private val context: Context): com.bytedance.speec
                     dataSize = data.size
                 }
                 Log.d(LogTag.SDK_INFO, "引擎音频数据(END)通知, 数据大小: $dataSize")
+                audioDataQueue.put(data)
+                isAudioQueueDone.set(true)
             }
 
             else -> {
