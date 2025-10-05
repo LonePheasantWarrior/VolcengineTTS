@@ -23,6 +23,7 @@ class SettingsFunction(private val context: Context) {
     private val speakerId = "selected_speaker_id"
     private val serviceCluster = "service_cluster"
     private val isEmotional = "is_emotional"
+    private val showWelcomeDialog = "show_welcome_dialog"
 
     private val mainHandler = Handler(Looper.getMainLooper())
     
@@ -67,5 +68,25 @@ class SettingsFunction(private val context: Context) {
         val serviceCluster = prefs.getString(serviceCluster, "") ?: ""
         val isEmotional = prefs.getBoolean(isEmotional, false)
         return SettingsData(appId, token, selectedSpeakerId, serviceCluster, isEmotional)
+    }
+    
+    /**
+     * 检查是否需要显示欢迎弹窗
+     * @return 如果需要显示返回true，否则返回false
+     */
+    fun shouldShowWelcomeDialog(): Boolean {
+        val prefs = getPreferences()
+        return prefs.getBoolean(showWelcomeDialog, true)
+    }
+    
+    /**
+     * 设置是否显示欢迎弹窗
+     * @param show 是否显示
+     */
+    fun setShowWelcomeDialog(show: Boolean) {
+        getPreferences().edit {
+            putBoolean(showWelcomeDialog, show)
+        }
+        Log.d(LogTag.INFO, "欢迎弹窗显示状态已更新: $show")
     }
 }

@@ -61,17 +61,35 @@ import com.github.lonepheasantwarrior.volcenginetts.common.Constants
 import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine
 import com.github.lonepheasantwarrior.volcenginetts.ui.theme.VolcengineTTSTheme
 import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction
+import com.github.lonepheasantwarrior.volcenginetts.ui.WelcomeDialog
 
 class MainActivity : ComponentActivity() {
     private val synthesisEngine: SynthesisEngine get() = (applicationContext as TTSApplication).synthesisEngine
+    private val settingsFunction: SettingsFunction get() = (applicationContext as TTSApplication).settingsFunction
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             VolcengineTTSTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) {
-                    VolcengineTTSUI(modifier = Modifier.padding(it))
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Scaffold(modifier = Modifier.fillMaxSize()) {
+                        VolcengineTTSUI(modifier = Modifier.padding(it))
+                    }
+                    
+                    // 显示欢迎弹窗
+                    var showWelcomeDialog by remember { mutableStateOf(settingsFunction.shouldShowWelcomeDialog()) }
+                    
+                    if (showWelcomeDialog) {
+                        WelcomeDialog(
+                            onDismiss = {
+                                showWelcomeDialog = false
+                            },
+                            onDontShowAgain = { dontShowAgain ->
+                                settingsFunction.setShowWelcomeDialog(!dontShowAgain)
+                            }
+                        )
+                    }
                 }
             }
         }
