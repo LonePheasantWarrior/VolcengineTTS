@@ -103,12 +103,12 @@ fun WelcomeDialog(
                                 painter = painterResource(id = R.mipmap.ic_launcher_foreground),
                                 contentDescription = "App Icon",
                                 modifier = Modifier
-                                    .size(80.dp)
+                                    .size(if (screenWidth > 600.dp) 120.dp else 80.dp)
                                     .clip(RoundedCornerShape(16.dp)),
                                 contentScale = ContentScale.Crop
                             )
                             
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(if (screenWidth > 600.dp) 24.dp else 16.dp))
                         }
                         
                         // 欢迎标题
@@ -116,17 +116,19 @@ fun WelcomeDialog(
                             text = "欢迎使用语音合成应用",
                             style = MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = Color.White,
+                                fontSize = if (screenWidth > 600.dp) 28.sp else MaterialTheme.typography.headlineMedium.fontSize
                             ),
                             textAlign = TextAlign.Center
                         )
                         
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(if (screenWidth > 600.dp) 12.dp else 8.dp))
                         
                         Text(
                             text = "开始前请了解以下重要信息",
                             style = MaterialTheme.typography.bodyMedium.copy(
-                                color = Color.White.copy(alpha = 0.9f)
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontSize = if (screenWidth > 600.dp) 18.sp else MaterialTheme.typography.bodyMedium.fontSize
                             ),
                             textAlign = TextAlign.Center
                         )
@@ -142,18 +144,18 @@ fun WelcomeDialog(
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             InfoItem(
-                                title = "AppId 和 Token 获取",
-                                description = "请前往火山引擎/控制台/豆包语音/语音合成大模型获取您的 AppId 和 Token"
+                                title = "AppId 和 Token",
+                                description = "请前往'火山引擎/控制台/豆包语音/语音合成大模型'下的'服务接口认证信息'获取您的 AppId 和 Token"
                             )
                             
                             InfoItem(
-                                title = "服务簇 ID 说明",
-                                description = "服务簇 ID 用于指定语音合成服务的地域，默认为 'cn-north-1'"
+                                title = "服务簇 ID",
+                                description = "服务簇 ID 默认为 'volcano_tts'"
                             )
                             
                             InfoItem(
-                                title = "开通服务提醒",
-                                description = "请确保您已在火山引擎开通语音合成大模型服务，并获取服务接口认证信息"
+                                title = "开通服务",
+                                description = "请确保您已在火山引擎开通语音合成大模型相关服务,并确认其可用"
                             )
                         }
                         
@@ -185,22 +187,24 @@ fun WelcomeDialog(
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        // 合并按钮
+                        // 合并按钮 - 响应式设计
                         Button(
                             onClick = { onDismiss() },
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
+                                .fillMaxWidth(if (isSmallScreen) 0.9f else 0.8f)
+                                .height(if (isSmallScreen) 48.dp else 56.dp)
+                                .padding(horizontal = if (isSmallScreen) 8.dp else 0.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color.White,
                                 contentColor = Color(0xFF2575FC)
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(if (isSmallScreen) 8.dp else 12.dp)
                         ) {
                             Text(
                                 text = "开始使用",
                                 style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = if (isSmallScreen) 16.sp else 18.sp
                                 )
                             )
                         }
