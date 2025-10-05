@@ -6,16 +6,19 @@ import android.speech.tts.SynthesisCallback;
 import android.speech.tts.SynthesisRequest;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeechService;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.github.lonepheasantwarrior.volcenginetts.TTSApplication;
 import com.github.lonepheasantwarrior.volcenginetts.common.Constants;
+import com.github.lonepheasantwarrior.volcenginetts.common.LogTag;
 import com.github.lonepheasantwarrior.volcenginetts.common.SettingsData;
 import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine;
 import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +49,11 @@ public class TTSService extends TextToSpeechService {
 
     @Override
     protected String[] onGetLanguage() {
+        if (mCurrentLanguage == null) {
+            // 默认使用简体中文(中国大陆)语言
+            mCurrentLanguage = new String[]{"zh", "CN", ""};
+        }
+        Log.d(LogTag.INFO, "onGetLanguage -> " + Arrays.toString(mCurrentLanguage));
         return mCurrentLanguage;
     }
 
@@ -65,6 +73,7 @@ public class TTSService extends TextToSpeechService {
             mCurrentLanguage = new String[]{lang, country, variant};
         }
 
+        Log.d(LogTag.INFO, "onLoadLanguage -> " + result);
         return result;
     }
 
