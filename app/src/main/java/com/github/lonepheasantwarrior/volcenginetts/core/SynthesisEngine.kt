@@ -26,25 +26,6 @@ class SynthesisEngine(private val context: Context) {
     private val synthesisEngineListener: SynthesisEngineListener get() = (context as TTSApplication).synthesisEngineListener
 
     /**
-     * 获取设备ID
-     */
-    private fun getDeviceId(): String {
-        // 使用设备硬件信息组合生成设备ID
-        val sb = StringBuilder()
-        sb.append(Build.BOARD).append("/")
-        sb.append(Build.BRAND).append("/")
-        sb.append(Build.DEVICE).append("/")
-        sb.append(Build.HARDWARE).append("/")
-        sb.append(Build.MODEL).append("/")
-        sb.append(Build.PRODUCT).append("/")
-        sb.append(Build.TAGS).append("/")
-        sb.append(Build.TYPE).append("/")
-        sb.append(Build.USER)
-
-        return generateMD5(sb.toString())
-    }
-
-    /**
      * 初始化语音合成引擎
      */
     fun create(
@@ -254,6 +235,25 @@ class SynthesisEngine(private val context: Context) {
         Log.i(LogTag.INFO, "引擎已销毁")
         isInitialized = false
         isParametersBeenSet = false
+    }
+
+    /**
+     * 获取设备ID
+     */
+    private fun getDeviceId(): String {
+        // 使用设备硬件信息组合生成设备ID
+        val sb = StringBuilder()
+        sb.append(Build.BOARD).append("/")
+        sb.append(Build.BRAND).append("/")
+        sb.append(Build.DEVICE).append("/")
+        sb.append(Build.HARDWARE).append("/")
+        sb.append(Build.MODEL).append("/")
+        sb.append(Build.PRODUCT).append("/")
+        sb.append(Build.TAGS).append("/")
+        sb.append(Build.TYPE).append("/")
+        sb.append(Build.USER)
+
+        return generateMD5(sb.toString())
     }
 
     /**
