@@ -8,10 +8,6 @@
 
 [Legado / 开源阅读](https://github.com/gedoor/legado)
 
-### 其他
-
-家里人读小说的时候想要有个趁手的朗读工具,豆包家的语音合成声音都蛮不错的,找了一圈儿竟然一个现成的都没有,正好最近有空就上手搞了
-
 ### 感谢
 
 - [TTS](https://github.com/ag2s20150909/TTS)
