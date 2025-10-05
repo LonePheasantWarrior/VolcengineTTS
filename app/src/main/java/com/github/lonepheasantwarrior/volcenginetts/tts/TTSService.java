@@ -20,6 +20,8 @@ import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class TTSService extends TextToSpeechService {
@@ -33,7 +35,7 @@ public class TTSService extends TextToSpeechService {
     private SettingsFunction settingsFunction;
 
     private TTSContext ttsContext;
-    
+
     // 定义一个特殊的空字节数组，用于表示控制信号而不是实际的音频数据
     private static final byte[] CONTROL_SIGNAL = new byte[0];
 
@@ -96,41 +98,18 @@ public class TTSService extends TextToSpeechService {
             callback.done();
             return;
         }
-        Log.d(LogTag.INFO, "待合成文本长度: " + request.getCharSequenceText().length());
-        Log.d(LogTag.INFO, "待合成文本: " + request.getCharSequenceText());
 
-        synthesisEngine.create(settings.getAppId(), settings.getToken(), settings.getSelectedSpeakerId(), settings.getServiceCluster(), settings.isEmotional());
-        synthesisEngine.startEngine(request.getCharSequenceText(), request.getSpeechRate(), null, request.getPitch());
+        String text = request.getCharSequenceText().toString();
+        Log.d(LogTag.INFO, "待合成文本长度: " + text.length());
+        Log.d(LogTag.INFO, "待合成文本: " + text);
 
-        try {
-            callback.start(getApplicationContext().getResources().getInteger(R.integer.tts_sample_rate)
-                    , AudioFormat.ENCODING_PCM_16BIT, 1 /* Number of channels. */);
-
-            Log.d(LogTag.INFO, "开始监听语音合成音频回调队列...");
-            do {
-                byte[] chunk = ttsContext.audioDataQueue.take();
-                // 检查是否是控制信号（空字节数组）
-                if (chunk != null && chunk != CONTROL_SIGNAL && chunk.length > 0) {
-                    Log.d(LogTag.INFO, "向系统TTS服务提供音频Callback,数据长度: " + chunk.length);
-                    int offset = 0;
-                    while (offset < chunk.length) {
-                        int chunkSize = Math.min(callback.getMaxBufferSize(), chunk.length - offset);
-                        callback.audioAvailable(chunk, offset, chunkSize);
-                        offset += chunkSize;
-                    }
-                }
-                Log.d(LogTag.INFO, "音频队列是否消费完成: " + ttsContext.isAudioQueueDone.get());
-            } while (!ttsContext.isAudioQueueDone.get());
-            if (ttsContext.isTTSEngineError.get()) {
-                callback.error();
-            }else {
-                callback.done();
-            }
-        } catch (Exception e) {
-            Log.e(LogTag.ERROR, "执行音频Callback发生错误: " + e.getMessage());
-            callback.error();
+        // 如果文本长度超过80个字符，进行拆分处理
+        if (text.length() > 80) {
+            Log.d(LogTag.INFO, "文本长度超过80字符，开始拆分处理");
+            synthesizeLongText(text, request, callback, settings);
+        } else {
+            synthesizeSingleText(text, request, callback, settings);
         }
-        synthesisEngine.destroy();
 
         Log.d(LogTag.INFO, "语音合成任务执行完毕,耗时: " + (System.currentTimeMillis() - onSynthesizeStartTime) / 1000 + "秒");
     }
@@ -179,5 +158,256 @@ public class TTSService extends TextToSpeechService {
             return false;
         }
         return true;
+    }
+
+    /**
+     * 智能拆分长文本为多个不超过80字符的片段
+     * 优先按句子边界（句号、感叹号、问号等）拆分，其次按逗号，最后按空格
+     *
+     * @param text 原始文本
+     * @return 拆分后的文本片段列表
+     */
+    private List<String> splitLongText(String text) {
+        List<String> segments = new ArrayList<>();
+        if (text == null || text.isEmpty()) {
+            return segments;
+        }
+
+        // 定义句子分隔符（中英文、全角半角）
+        String[] sentenceDelimiters = {".", "。", "!", "！", "?", "？", ";", "；"};
+        String[] clauseDelimiters = {",", "，"};
+
+        int maxLength = 80;
+        int currentPos = 0;
+
+        while (currentPos < text.length()) {
+            int remainingLength = text.length() - currentPos;
+
+            // 如果剩余文本长度小于等于最大长度，直接添加
+            if (remainingLength <= maxLength) {
+                segments.add(text.substring(currentPos));
+                break;
+            }
+
+            // 查找最佳拆分点
+            int splitPos = findBestSplitPoint(text, currentPos, maxLength, sentenceDelimiters, clauseDelimiters);
+
+            // 如果找不到合适的拆分点，按最大长度强制拆分
+            if (splitPos == currentPos) {
+                splitPos = currentPos + maxLength;
+            }
+
+            segments.add(text.substring(currentPos, splitPos).trim());
+            currentPos = splitPos;
+        }
+
+        Log.d(LogTag.INFO, "文本拆分完成，共拆分为 " + segments.size() + " 个片段");
+        return segments;
+    }
+
+    /**
+     * 查找最佳拆分点
+     *
+     * @param text               文本
+     * @param startPos           起始位置
+     * @param maxLength          最大长度
+     * @param sentenceDelimiters 句子分隔符
+     * @param clauseDelimiters   从句分隔符
+     * @return 最佳拆分位置
+     */
+    private int findBestSplitPoint(String text, int startPos, int maxLength,
+                                   String[] sentenceDelimiters, String[] clauseDelimiters) {
+        int endPos = Math.min(startPos + maxLength, text.length());
+
+        // 优先查找句子结束位置
+        for (String delimiter : sentenceDelimiters) {
+            int pos = text.lastIndexOf(delimiter, endPos - 1);
+            if (pos > startPos && pos - startPos <= maxLength) {
+                return pos + delimiter.length(); // 包含分隔符
+            }
+        }
+
+        // 其次查找从句分隔符
+        for (String delimiter : clauseDelimiters) {
+            int pos = text.lastIndexOf(delimiter, endPos - 1);
+            if (pos > startPos && pos - startPos <= maxLength) {
+                return pos + delimiter.length(); // 包含分隔符
+            }
+        }
+
+        // 最后查找空格
+        int spacePos = text.lastIndexOf(' ', endPos - 1);
+        if (spacePos > startPos && spacePos - startPos <= maxLength) {
+            return spacePos + 1; // 包含空格
+        }
+
+        // 如果都找不到，返回起始位置（表示需要强制拆分）
+        return startPos;
+    }
+
+    /**
+     * 合成单个文本片段（不超过80字符）
+     *
+     * @param text     待合成文本
+     * @param request  原始请求
+     * @param callback 合成回调
+     * @param settings 配置信息
+     */
+    private void synthesizeSingleText(String text, SynthesisRequest request,
+                                      SynthesisCallback callback, SettingsData settings) {
+        synthesisEngine.create(settings.getAppId(), settings.getToken(),
+                settings.getSelectedSpeakerId(), settings.getServiceCluster(), settings.isEmotional());
+        synthesisEngine.startEngine(text, request.getSpeechRate(), null, request.getPitch());
+
+        try {
+            callback.start(getApplicationContext().getResources().getInteger(R.integer.tts_sample_rate)
+                    , AudioFormat.ENCODING_PCM_16BIT, 1 /* Number of channels. */);
+
+            Log.d(LogTag.INFO, "开始监听语音合成音频回调队列...");
+            do {
+                byte[] chunk = ttsContext.audioDataQueue.take();
+                // 检查是否是控制信号（空字节数组）
+                if (chunk != null && chunk != CONTROL_SIGNAL && chunk.length > 0) {
+                    Log.d(LogTag.INFO, "向系统TTS服务提供音频Callback,数据长度: " + chunk.length);
+                    int offset = 0;
+                    while (offset < chunk.length) {
+                        int chunkSize = Math.min(callback.getMaxBufferSize(), chunk.length - offset);
+                        callback.audioAvailable(chunk, offset, chunkSize);
+                        offset += chunkSize;
+                    }
+                }
+                Log.d(LogTag.INFO, "音频队列是否消费完成: " + ttsContext.isAudioQueueDone.get());
+            } while (!ttsContext.isAudioQueueDone.get());
+            if (ttsContext.isTTSEngineError.get()) {
+                callback.error();
+            } else {
+                callback.done();
+            }
+        } catch (Exception e) {
+            Log.e(LogTag.ERROR, "执行音频Callback发生错误: " + e.getMessage());
+            callback.error();
+        }
+        synthesisEngine.destroy();
+    }
+
+    /**
+     * 合成长文本（超过80字符）
+     *
+     * @param text     待合成文本
+     * @param request  原始请求
+     * @param callback 合成回调
+     * @param settings 配置信息
+     */
+    private void synthesizeLongText(String text, SynthesisRequest request,
+                                    SynthesisCallback callback, SettingsData settings) {
+        List<String> segments = splitLongText(text);
+
+        if (segments.isEmpty()) {
+            callback.error();
+            return;
+        }
+
+        // 初始化回调
+        try {
+            callback.start(getApplicationContext().getResources().getInteger(R.integer.tts_sample_rate)
+                    , AudioFormat.ENCODING_PCM_16BIT, 1 /* Number of channels. */);
+        } catch (Exception e) {
+            Log.e(LogTag.ERROR, "初始化音频回调失败: " + e.getMessage());
+            callback.error();
+            return;
+        }
+
+        boolean hasError = false;
+
+        for (int i = 0; i < segments.size(); i++) {
+            String segment = segments.get(i);
+            Log.d(LogTag.INFO, "合成第 " + (i + 1) + "/" + segments.size() + " 个片段，长度: " + segment.length());
+            Log.d(LogTag.INFO, "片段内容: " + segment);
+
+            // 为每个片段创建新的合成引擎实例
+            synthesisEngine.create(settings.getAppId(), settings.getToken(),
+                    settings.getSelectedSpeakerId(), settings.getServiceCluster(), settings.isEmotional());
+            synthesisEngine.startEngine(segment, request.getSpeechRate(), null, request.getPitch());
+
+            try {
+                // 处理当前片段的音频数据
+                boolean segmentCompleted = false;
+                ttsContext.isAudioQueueDone.set(false);
+                ttsContext.isTTSEngineError.set(false);
+
+                while (!segmentCompleted) {
+                    byte[] chunk = ttsContext.audioDataQueue.take();
+                    // 检查是否是控制信号（空字节数组）
+                    if (chunk != null && chunk != CONTROL_SIGNAL && chunk.length > 0) {
+                        Log.d(LogTag.INFO, "向系统TTS服务提供音频Callback,数据长度: " + chunk.length);
+                        int offset = 0;
+                        while (offset < chunk.length) {
+                            int chunkSize = Math.min(callback.getMaxBufferSize(), chunk.length - offset);
+                            callback.audioAvailable(chunk, offset, chunkSize);
+                            offset += chunkSize;
+                        }
+                    }
+
+                    // 检查当前片段是否完成
+                    if (ttsContext.isAudioQueueDone.get()) {
+                        segmentCompleted = true;
+                        if (ttsContext.isTTSEngineError.get()) {
+                            hasError = true;
+                            Log.e(LogTag.ERROR, "第 " + (i + 1) + " 个片段合成失败");
+                            break;
+                        }
+                    }
+                }
+
+                // 销毁当前片段的引擎
+                synthesisEngine.destroy();
+
+                // 如果发生错误，停止后续合成
+                if (hasError) {
+                    break;
+                }
+
+                // 在片段之间添加短暂停顿（除了最后一个片段）
+                if (i < segments.size() - 1) {
+                    addPauseBetweenSegments(callback);
+                }
+
+            } catch (Exception e) {
+                Log.e(LogTag.ERROR, "处理第 " + (i + 1) + " 个片段时发生错误: " + e.getMessage());
+                hasError = true;
+                synthesisEngine.destroy();
+                break;
+            }
+        }
+
+        if (hasError) {
+            callback.error();
+        } else {
+            callback.done();
+        }
+    }
+
+    /**
+     * 在文本片段之间添加短暂停顿
+     *
+     * @param callback 合成回调
+     */
+    private void addPauseBetweenSegments(SynthesisCallback callback) {
+        try {
+            // 生成短暂的静音数据（约100ms，基于24kHz采样率）
+            int pauseSamples = 2400; // 24kHz * 0.1s = 2400 samples
+            byte[] silence = new byte[pauseSamples * 2]; // 16-bit = 2 bytes per sample
+
+            int offset = 0;
+            while (offset < silence.length) {
+                int chunkSize = Math.min(callback.getMaxBufferSize(), silence.length - offset);
+                callback.audioAvailable(silence, offset, chunkSize);
+                offset += chunkSize;
+            }
+
+            Log.d(LogTag.INFO, "添加片段间停顿完成");
+        } catch (Exception e) {
+            Log.e(LogTag.ERROR, "添加片段间停顿失败: " + e.getMessage());
+        }
     }
 }

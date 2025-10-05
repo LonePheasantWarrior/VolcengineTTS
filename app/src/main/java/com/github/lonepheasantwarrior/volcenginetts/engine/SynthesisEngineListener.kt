@@ -72,20 +72,20 @@ class SynthesisEngineListener(private val context: Context): com.bytedance.speec
 
             SpeechEngineDefines.MESSAGE_TYPE_TTS_START_PLAYING -> {
                 Log.d(LogTag.SDK_INFO, "引擎语音播放开始通知: $stdData")
-                ttsContext.audioDataQueue.put(controlSignal)
                 ttsContext.isAudioQueueDone.set(false)
+                ttsContext.audioDataQueue.put(controlSignal)
             }
 
             SpeechEngineDefines.MESSAGE_TYPE_TTS_PLAYBACK_PROGRESS -> {
                 Log.d(LogTag.SDK_INFO, "引擎语音播放进度通知: $stdData")
-                ttsContext.audioDataQueue.put(controlSignal)
                 ttsContext.isAudioQueueDone.set(false)
+                ttsContext.audioDataQueue.put(controlSignal)
             }
 
             SpeechEngineDefines.MESSAGE_TYPE_TTS_FINISH_PLAYING -> {
                 Log.d(LogTag.SDK_INFO, "引擎语音播放结束通知: $stdData")
-                ttsContext.audioDataQueue.put(controlSignal)
                 ttsContext.isAudioQueueDone.set(true)
+                ttsContext.audioDataQueue.put(controlSignal)
             }
 
             SpeechEngineDefines.MESSAGE_TYPE_TTS_AUDIO_DATA -> {
@@ -94,8 +94,8 @@ class SynthesisEngineListener(private val context: Context): com.bytedance.speec
                     dataSize = data.size
                 }
                 Log.d(LogTag.SDK_INFO, "引擎音频数据通知, 数据大小: $dataSize")
-                ttsContext.audioDataQueue.put(data)
                 ttsContext.isAudioQueueDone.set(false)
+                ttsContext.audioDataQueue.put(data)
             }
 
             SpeechEngineDefines.MESSAGE_TYPE_TTS_AUDIO_DATA_END -> {
@@ -104,8 +104,8 @@ class SynthesisEngineListener(private val context: Context): com.bytedance.speec
                     dataSize = data.size
                 }
                 Log.d(LogTag.SDK_INFO, "引擎音频数据(END)通知, 数据大小: $dataSize")
-                ttsContext.audioDataQueue.put(data)
                 ttsContext.isAudioQueueDone.set(true)
+                ttsContext.audioDataQueue.put(data)
             }
 
             else -> {
