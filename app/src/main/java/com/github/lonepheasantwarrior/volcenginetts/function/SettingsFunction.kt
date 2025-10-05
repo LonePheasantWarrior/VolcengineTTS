@@ -2,7 +2,12 @@ package com.github.lonepheasantwarrior.volcenginetts.function
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.widget.Toast
 import androidx.core.content.edit
+import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
 import com.github.lonepheasantwarrior.volcenginetts.common.SettingsData
 
 /**
@@ -18,6 +23,8 @@ class SettingsFunction(private val context: Context) {
     private val speakerId = "selected_speaker_id"
     private val serviceCluster = "service_cluster"
     private val isEmotional = "is_emotional"
+
+    private val mainHandler = Handler(Looper.getMainLooper())
     
     /**
      * 获取SharedPreferences实例
@@ -41,6 +48,10 @@ class SettingsFunction(private val context: Context) {
             putString(speakerId, selectedSpeakerId)
             putString(this@SettingsFunction.serviceCluster, serviceCluster)
             putBoolean(this@SettingsFunction.isEmotional, isEmotional)
+        }
+        Log.d(LogTag.INFO, "配置已保存")
+        mainHandler.post {
+            Toast.makeText(context, "保存成功", Toast.LENGTH_SHORT).show()
         }
     }
     

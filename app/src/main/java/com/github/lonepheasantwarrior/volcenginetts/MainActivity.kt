@@ -10,13 +10,14 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.PlayArrow
@@ -145,11 +146,28 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
         }
         if (savedSelectedSpeakerId.isNotEmpty()) {
             selectedSpeakerId = savedSelectedSpeakerId
+            // 根据保存的声音ID查找对应的声音名称
+            findSpeakerNameById(savedSelectedSpeakerId)
         }
         if (serviceCluster.isNotEmpty()) {
             serviceCluster = savedServiceCluster
         }
         isEmotional = savedIsEmotional
+    }
+    
+    /**
+     * 根据声音ID查找声音名称
+     */
+    private fun findSpeakerNameById(speakerId: String) {
+        val speakerList = getSpeakerList()
+        val speakerInfo = speakerList
+            .map { it.split("|") }
+            .find { it.size >= 3 && it[2] == speakerId } // ID在索引2的位置
+        
+        if (speakerInfo != null) {
+            selectedSpeakerName = speakerInfo[1] // 名称在索引1的位置
+            selectedScene = speakerInfo[0] // 场景在索引0的位置
+        }
     }
 
     fun synthesizeSpeech() {
@@ -173,7 +191,7 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
     // 获取数据
     val sceneCategories = viewModel.getSceneCategories()
     
-    // 初始化默认场景
+    // 初始化默认场景（仅在未设置时）
     if (viewModel.selectedScene.isEmpty()) {
         viewModel.selectedScene = sceneCategories.firstOrNull() ?: ""
     }
@@ -181,7 +199,7 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
     // 过滤当前场景的声音
     val filteredSpeakers = viewModel.filterSpeakersByScene(viewModel.selectedScene)
     
-    // 初始化默认声音
+    // 初始化默认声音（仅在未设置时）
     if (viewModel.selectedSpeakerId.isEmpty() && filteredSpeakers.isNotEmpty()) {
         viewModel.selectedSpeakerId = filteredSpeakers.first().id
         viewModel.selectedSpeakerName = filteredSpeakers.first().name
@@ -191,59 +209,70 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
     var sceneDropdownExpanded by remember { mutableStateOf(false) }
     var speakerDropdownExpanded by remember { mutableStateOf(false) }
     
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    // 使用垂直滚动布局以适应不同屏幕尺寸
+    Box(
+        modifier = modifier.fillMaxSize()
     ) {
-        // 基础配置组 (appId, token, serviceCluster)
-        TTSBasicConfigurationInputs(
-            appId = viewModel.appId,
-            token = viewModel.token,
-            serviceCluster = viewModel.serviceCluster,
-            onAppIdChange = { viewModel.appId = it },
-            onTokenChange = { viewModel.token = it },
-            onServiceClusterChange = { viewModel.serviceCluster = it }
-        )
-        
-        // 场景和声音配置组 (selectedScene, selectedSpeakerName, isEmotional)
-        TTSVoiceConfigurationInputs(
-            selectedScene = viewModel.selectedScene,
-            sceneCategories = sceneCategories,
-            selectedSpeakerName = viewModel.selectedSpeakerName,
-            speakers = filteredSpeakers,
-            isEmotional = viewModel.isEmotional,
-            sceneDropdownExpanded = sceneDropdownExpanded,
-            speakerDropdownExpanded = speakerDropdownExpanded,
-            onSceneExpandedChange = { sceneDropdownExpanded = it },
-            onSpeakerExpandedChange = { speakerDropdownExpanded = it },
-            onSceneSelect = { scene ->
-                viewModel.selectedScene = scene
-                sceneDropdownExpanded = false
-                // 获取新场景的声音列表并设置为第一个声音选项
-                val newFilteredSpeakers = viewModel.filterSpeakersByScene(scene)
-                if (newFilteredSpeakers.isNotEmpty()) {
-                    viewModel.selectedSpeakerId = newFilteredSpeakers.first().id
-                    viewModel.selectedSpeakerName = newFilteredSpeakers.first().name
-                } else {
-                    viewModel.selectedSpeakerId = ""
-                    viewModel.selectedSpeakerName = ""
-                }
-            },
-            onSpeakerSelect = { speakerInfo ->
-                viewModel.selectedSpeakerName = speakerInfo.name
-                viewModel.selectedSpeakerId = speakerInfo.id
-                speakerDropdownExpanded = false
-            },
-            onIsEmotionalChange = { viewModel.isEmotional = it }
-        )
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                // 基础配置组 (appId, token, serviceCluster)
+                TTSBasicConfigurationInputs(
+                    appId = viewModel.appId,
+                    token = viewModel.token,
+                    serviceCluster = viewModel.serviceCluster,
+                    onAppIdChange = { viewModel.appId = it },
+                    onTokenChange = { viewModel.token = it },
+                    onServiceClusterChange = { viewModel.serviceCluster = it }
+                )
+            }
+            
+            item {
+                // 场景和声音配置组 (selectedScene, selectedSpeakerName, isEmotional)
+                TTSVoiceConfigurationInputs(
+                    selectedScene = viewModel.selectedScene,
+                    sceneCategories = sceneCategories,
+                    selectedSpeakerName = viewModel.selectedSpeakerName,
+                    speakers = filteredSpeakers,
+                    isEmotional = viewModel.isEmotional,
+                    sceneDropdownExpanded = sceneDropdownExpanded,
+                    speakerDropdownExpanded = speakerDropdownExpanded,
+                    onSceneExpandedChange = { sceneDropdownExpanded = it },
+                    onSpeakerExpandedChange = { speakerDropdownExpanded = it },
+                    onSceneSelect = { scene ->
+                        viewModel.selectedScene = scene
+                        sceneDropdownExpanded = false
+                        // 获取新场景的声音列表并设置为第一个声音选项
+                        val newFilteredSpeakers = viewModel.filterSpeakersByScene(scene)
+                        if (newFilteredSpeakers.isNotEmpty()) {
+                            viewModel.selectedSpeakerId = newFilteredSpeakers.first().id
+                            viewModel.selectedSpeakerName = newFilteredSpeakers.first().name
+                        } else {
+                            viewModel.selectedSpeakerId = ""
+                            viewModel.selectedSpeakerName = ""
+                        }
+                    },
+                    onSpeakerSelect = { speakerInfo ->
+                        viewModel.selectedSpeakerName = speakerInfo.name
+                        viewModel.selectedSpeakerId = speakerInfo.id
+                        speakerDropdownExpanded = false
+                    },
+                    onIsEmotionalChange = { viewModel.isEmotional = it }
+                )
+            }
 
-        // 保存设置按钮组
-        TTSSaveSettingsButton(
-            onClick = { viewModel.saveSettings() }
-        )
+            item {
+                // 保存设置按钮组
+                TTSSaveSettingsButton(
+                    onClick = { viewModel.saveSettings() }
+                )
+            }
+        }
     }
 }
 
