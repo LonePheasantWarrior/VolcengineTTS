@@ -1,4 +1,4 @@
-package com.github.lonepheasantwarrior.volcenginetts.core
+package com.github.lonepheasantwarrior.volcenginetts.engine
 
 import android.content.Context
 import android.os.Build
@@ -10,7 +10,8 @@ import com.bytedance.speech.speechengine.SpeechEngine
 import com.bytedance.speech.speechengine.SpeechEngineDefines
 import com.bytedance.speech.speechengine.SpeechEngineGenerator
 import com.github.lonepheasantwarrior.volcenginetts.R
-import com.github.lonepheasantwarrior.volcenginetts.common.Dictionary
+import com.github.lonepheasantwarrior.volcenginetts.TTSApplication
+import com.github.lonepheasantwarrior.volcenginetts.common.Constants
 import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
@@ -33,7 +34,7 @@ class SynthesisEngine(private val context: Context) {
         token: String,
         speakerId: String,
         serviceCluster: String,
-        emotional: Boolean
+        isEmotional: Boolean
     ): SpeechEngine {
         if (mSpeechEngine != null) {
             destroy()
@@ -42,7 +43,7 @@ class SynthesisEngine(private val context: Context) {
         mSpeechEngine!!.createEngine()
         Log.d(LogTag.SDK_INFO, "语音合成SDK版本号: " + mSpeechEngine!!.version)
         // 初始化引擎配置
-        setEngineParams(appId, token, speakerId, serviceCluster, emotional)
+        setEngineParams(appId, token, speakerId, serviceCluster, isEmotional)
         return mSpeechEngine!!
     }
 
@@ -54,7 +55,7 @@ class SynthesisEngine(private val context: Context) {
         token: String,
         speakerId: String,
         serviceCluster: String,
-        emotional: Boolean
+        isEmotional: Boolean
     ) {
         //配置工作场景
         mSpeechEngine!!.setOptionString(
@@ -107,7 +108,7 @@ class SynthesisEngine(private val context: Context) {
         )
         //在线合成使用的“发音人类型”
         mSpeechEngine!!.setOptionString(
-            SpeechEngineDefines.PARAMS_KEY_TTS_VOICE_ONLINE_STRING, Dictionary.SpeechEngine.VOICE
+            SpeechEngineDefines.PARAMS_KEY_TTS_VOICE_ONLINE_STRING, Constants.VOICE
         )
         //是否使用SDK内置播放器播放合成出的音频
         mSpeechEngine!!.setOptionBoolean(
@@ -116,7 +117,7 @@ class SynthesisEngine(private val context: Context) {
         //是否启用在线合成的情感预测功能
         mSpeechEngine!!.setOptionBoolean(
             SpeechEngineDefines.PARAMS_KEY_TTS_WITH_INTENT_BOOL,
-            emotional
+            isEmotional
         )
         //User ID（用以辅助定位线上用户问题）
         mSpeechEngine!!.setOptionString(
@@ -222,6 +223,13 @@ class SynthesisEngine(private val context: Context) {
         }
 
         isParametersBeenSet = true
+    }
+
+    /**
+     * 是否已创建
+     */
+    fun isCreated(): Boolean {
+        return isInitialized
     }
 
     /**

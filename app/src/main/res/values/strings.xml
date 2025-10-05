@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">VolcengineTTS</string>
 
     <string name="app_title">火山引擎语音合成</string>
@@ -10,6 +10,23 @@
     <string name="input_text_for_speak">待合成文本</string>
     <string name="button_speak">朗读</string>
     <string name="save_settings">保存设置</string>
+    <string name="emotional_speech_switch">情感朗读</string>
     <string name="tts_service_address">wss://openspeech.bytedance.com</string>
     <string name="tts_service_api_path">/api/v1/tts/ws_binary</string>
+
+    <string name="tts_sample_default">这是语音合成示例。This is an example of speech synthesis.</string>
+    <string name="tts_sample_en">This is an example of speech synthesis.</string>
+    <string name="tts_sample_zh">这是语音合成示例。</string>
+    <string name="tts_sample_ru">Это пример синтеза речи.</string>
+    <string name="tts_sample_hi">यह बात सिंटेस का एक उदाहरण है.</string>
+    <string name="tts_sample_tr">Bu konuşma sintezi örneğindir.</string>
+    <string name="tts_sample_de">Dies ist ein Beispiel für die Sprachsynthese.</string>
+    <string name="tts_sample_it">Questo è un esempio di sintesi vocale.</string>
+    <string name="tts_sample_ja">これは音声合成の例である。</string>
+    <string name="tts_sample_fr" tools:ignore="Typos">Voici un exemple de synthèse vocale.</string>
+    <string name="tts_sample_nl">Dit is een voorbeeld van spraaksynthese.</string>
+    <string name="tts_sample_pt">Este é um exemplo de síntese Da fala.</string>
+    <string name="tts_sample_es">Este es un ejemplo de síntesis de voz.</string>
+    <string name="tts_sample_ko">이것 은 음성 합성 예시 이다.</string>
+    <string name="tts_sample_ar">هذا هو مثال على تركيب الكلام</string>
 </resources>

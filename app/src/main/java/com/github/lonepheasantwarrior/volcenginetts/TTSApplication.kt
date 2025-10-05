@@ -1,13 +1,17 @@
-package com.github.lonepheasantwarrior.volcenginetts.core
+package com.github.lonepheasantwarrior.volcenginetts
 
 import android.app.Application
 import android.util.Log
 import com.bytedance.speech.speechengine.SpeechEngineGenerator
 import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
+import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine
+import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngineListener
+import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction
 
 class TTSApplication: Application() {
     lateinit var synthesisEngine: SynthesisEngine private set
     lateinit var synthesisEngineListener: SynthesisEngineListener private set
+    lateinit var settingsFunction: SettingsFunction private set
 
     override fun onCreate() {
         super.onCreate()
@@ -18,5 +22,6 @@ class TTSApplication: Application() {
 
         synthesisEngine = SynthesisEngine(this)
         synthesisEngineListener = SynthesisEngineListener(this)
+        settingsFunction = SettingsFunction(this)
     }
 }

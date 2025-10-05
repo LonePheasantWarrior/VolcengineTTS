@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -45,17 +46,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import android.app.Application
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
+import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine
 import com.github.lonepheasantwarrior.volcenginetts.ui.theme.VolcengineTTSTheme
 import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction
 
 class MainActivity : ComponentActivity() {
+    private val synthesisEngine: SynthesisEngine get() = (applicationContext as TTSApplication).synthesisEngine
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -67,6 +73,11 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        synthesisEngine.destroy()
+    }
 }
 
 // 数据类 - 表示声音信息
@@ -77,19 +88,19 @@ data class SpeakerInfo(
 
 // ViewModel 类 - 负责状态管理和业务逻辑
 class VolcengineTTSViewModel(application: Application) : AndroidViewModel(application) {
+    private val settingsFunction: SettingsFunction get() = (getApplication() as TTSApplication).settingsFunction
+
     // 应用配置状态
     var appId by mutableStateOf(" ")
     var token by mutableStateOf(" ")
     var serviceCluster by mutableStateOf("") //接口区域ID
     var textToSynthesize by mutableStateOf("")
+    var isEmotional by mutableStateOf(false) // 感情朗读开关
 
     // UI 交互状态
     var selectedScene by mutableStateOf("")
     var selectedSpeakerId by mutableStateOf("") // 存储选中的声音ID
     var selectedSpeakerName by mutableStateOf("") // 存储选中的声音名称
-    
-    // 设置功能实例
-    private val settingsFunction = SettingsFunction(application)
     
     init {
         // 初始化时加载保存的设置
@@ -117,14 +128,15 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
      * 保存设置到持久化存储
      */
     fun saveSettings() {
-        settingsFunction.saveSettings(appId, token, selectedSpeakerId, serviceCluster)
+        settingsFunction.saveSettings(appId, token, selectedSpeakerId, serviceCluster, isEmotional)
     }
     
     /**
      * 从持久化存储加载设置
      */
     private fun loadSettings() {
-        val (savedAppId, savedToken, savedSelectedSpeakerId, savedServiceCluster) = settingsFunction.getSettings()
+        val settingsData = settingsFunction.getSettings()
+        val (savedAppId, savedToken, savedSelectedSpeakerId, savedServiceCluster, savedIsEmotional) = settingsData
         if (savedAppId.isNotEmpty()) {
             appId = savedAppId
         }
@@ -137,6 +149,7 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
         if (serviceCluster.isNotEmpty()) {
             serviceCluster = savedServiceCluster
         }
+        isEmotional = savedIsEmotional
     }
 
     fun synthesizeSpeech() {
@@ -190,10 +203,12 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
             appId = viewModel.appId,
             token = viewModel.token,
             serviceCluster = viewModel.serviceCluster,
+            isEmotional = viewModel.isEmotional,
 
             onAppIdChange = { viewModel.appId = it },
             onTokenChange = { viewModel.token = it },
-            onServiceClusterChange = { viewModel.serviceCluster = it }
+            onServiceClusterChange = { viewModel.serviceCluster = it },
+            onIsEmotionalChange = { viewModel.isEmotional = it }
         )
         
         // 场景选择器
@@ -254,10 +269,11 @@ fun TTSConfigurationInputs(
     appId: String,
     token: String,
     serviceCluster: String,
-
+    isEmotional: Boolean,
     onAppIdChange: (String) -> Unit,
     onTokenChange: (String) -> Unit,
-    onServiceClusterChange: (String) -> Unit
+    onServiceClusterChange: (String) -> Unit,
+    onIsEmotionalChange: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -309,6 +325,33 @@ fun TTSConfigurationInputs(
                     unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 )
             )
+            
+            // 情感朗读开关
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(id = R.string.emotional_speech_switch),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                androidx.compose.material3.Switch(
+                    checked = isEmotional,
+                    onCheckedChange = onIsEmotionalChange,
+                    thumbContent = if (isEmotional) {
+                        {
+                            Icon(
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(SwitchDefaults.IconSize)
+                            )
+                        }
+                    } else {
+                        null
+                    }
+                )
+            }
         }
     }
 }

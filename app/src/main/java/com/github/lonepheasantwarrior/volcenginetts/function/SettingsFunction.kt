@@ -16,7 +16,8 @@ class SettingsFunction(private val context: Context) {
     private val appId = "app_id"
     private val token = "token"
     private val speakerId = "selected_speaker_id"
-    private val serviceCluster = "serviceCluster"
+    private val serviceCluster = "service_cluster"
+    private val isEmotional = "is_emotional"
     
     /**
      * 获取SharedPreferences实例
@@ -31,13 +32,15 @@ class SettingsFunction(private val context: Context) {
      * @param token 令牌
      * @param selectedSpeakerId 选中的声音ID
      * @param serviceCluster 接口服务簇
+     * @param isEmotional 是否开启情感朗读
      */
-    fun saveSettings(appId: String, token: String, selectedSpeakerId: String, serviceCluster: String) {
+    fun saveSettings(appId: String, token: String, selectedSpeakerId: String, serviceCluster: String, isEmotional: Boolean = false) {
         getPreferences().edit {
             putString(this@SettingsFunction.appId, appId)
             putString(this@SettingsFunction.token, token)
             putString(speakerId, selectedSpeakerId)
             putString(this@SettingsFunction.serviceCluster, serviceCluster)
+            putBoolean(this@SettingsFunction.isEmotional, isEmotional)
         }
     }
     
@@ -50,7 +53,8 @@ class SettingsFunction(private val context: Context) {
         val appId = prefs.getString(appId, "") ?: ""
         val token = prefs.getString(token, "") ?: ""
         val selectedSpeakerId = prefs.getString(speakerId, "") ?: ""
-        val serviceCluster = prefs.getString(this@SettingsFunction.serviceCluster, "") ?: ""
-        return SettingsData(appId, token, selectedSpeakerId, serviceCluster)
+        val serviceCluster = prefs.getString(serviceCluster, "") ?: ""
+        val isEmotional = prefs.getBoolean(isEmotional, false)
+        return SettingsData(appId, token, selectedSpeakerId, serviceCluster, isEmotional)
     }
 }

@@ -1,4 +1,4 @@
-package com.github.lonepheasantwarrior.volcenginetts.core
+package com.github.lonepheasantwarrior.volcenginetts.engine
 
 import android.content.Context
 import android.os.Handler

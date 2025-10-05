@@ -11,5 +11,6 @@ data class SettingsData(
     val appId: String,
     val token: String,
     val selectedSpeakerId: String,
-    val serviceCluster: String
+    val serviceCluster: String,
+    val isEmotional: Boolean
 )
