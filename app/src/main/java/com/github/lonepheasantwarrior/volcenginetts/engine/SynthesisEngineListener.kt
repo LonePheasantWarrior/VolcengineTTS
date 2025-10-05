@@ -17,6 +17,9 @@ class SynthesisEngineListener(private val context: Context): com.bytedance.speec
     private val mainHandler = Handler(Looper.getMainLooper())
     private val synthesisEngine: SynthesisEngine get() = (context as TTSApplication).synthesisEngine
     private val ttsContext: TTSContext get() = (context as TTSApplication).ttsContext
+    
+    // 定义一个特殊的空字节数组，用于表示控制信号而不是实际的音频数据
+    private val controlSignal = ByteArray(0)
 
     override fun onSpeechMessage(type: Int, data: ByteArray?, len: Int) {
         ttsContext.currentEngineState.set(type)
@@ -69,14 +72,20 @@ class SynthesisEngineListener(private val context: Context): com.bytedance.speec
 
             SpeechEngineDefines.MESSAGE_TYPE_TTS_START_PLAYING -> {
                 Log.d(LogTag.SDK_INFO, "引擎语音播放开始通知: $stdData")
+                ttsContext.audioDataQueue.put(controlSignal)
+                ttsContext.isAudioQueueDone.set(false)
             }
 
             SpeechEngineDefines.MESSAGE_TYPE_TTS_PLAYBACK_PROGRESS -> {
                 Log.d(LogTag.SDK_INFO, "引擎语音播放进度通知: $stdData")
+                ttsContext.audioDataQueue.put(controlSignal)
+                ttsContext.isAudioQueueDone.set(false)
             }
 
             SpeechEngineDefines.MESSAGE_TYPE_TTS_FINISH_PLAYING -> {
                 Log.d(LogTag.SDK_INFO, "引擎语音播放结束通知: $stdData")
+                ttsContext.audioDataQueue.put(controlSignal)
+                ttsContext.isAudioQueueDone.set(true)
             }
 
             SpeechEngineDefines.MESSAGE_TYPE_TTS_AUDIO_DATA -> {

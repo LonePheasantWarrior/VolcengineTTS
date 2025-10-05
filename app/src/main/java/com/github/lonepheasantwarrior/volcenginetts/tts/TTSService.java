@@ -33,6 +33,9 @@ public class TTSService extends TextToSpeechService {
     private SettingsFunction settingsFunction;
 
     private TTSContext ttsContext;
+    
+    // 定义一个特殊的空字节数组，用于表示控制信号而不是实际的音频数据
+    private static final byte[] CONTROL_SIGNAL = new byte[0];
 
     @Override
     public void onCreate() {
@@ -112,7 +115,8 @@ public class TTSService extends TextToSpeechService {
                     break;
                 }
                 byte[] chunk = ttsContext.audioDataQueue.take();
-                if (chunk != null) {
+                // 检查是否是控制信号（空字节数组）
+                if (chunk != null && chunk != CONTROL_SIGNAL && chunk.length > 0) {
                     Log.d(LogTag.INFO, "向系统TTS服务提供音频Callback,数据长度: " + chunk.length);
                     int offset = 0;
                     while (offset < chunk.length) {
@@ -121,6 +125,7 @@ public class TTSService extends TextToSpeechService {
                         offset += chunkSize;
                     }
                 }
+                Log.d(LogTag.INFO, "音频队列是否消费完成: " + ttsContext.isAudioQueueDone.get());
                 if (ttsContext.isAudioQueueDone.get()) break;
             }
             if (ttsContext.isTTSEngineError.get()) {

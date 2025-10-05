@@ -104,7 +104,7 @@ class SynthesisEngine(private val context: Context) {
         //是否返回音频数据
         mSpeechEngine!!.setOptionInt(
             SpeechEngineDefines.PARAMS_KEY_TTS_DATA_CALLBACK_MODE_INT,
-            SpeechEngineDefines.TTS_DATA_CALLBACK_MODE_ALL
+            SpeechEngineDefines.TTS_DATA_CALLBACK_MODE_NONE
         )
         //在线合成使用的音色代号
         mSpeechEngine!!.setOptionString(
@@ -116,7 +116,7 @@ class SynthesisEngine(private val context: Context) {
         )
         //是否使用SDK内置播放器播放合成出的音频
         mSpeechEngine!!.setOptionBoolean(
-            SpeechEngineDefines.PARAMS_KEY_TTS_ENABLE_PLAYER_BOOL, false
+            SpeechEngineDefines.PARAMS_KEY_TTS_ENABLE_PLAYER_BOOL, true
         )
         //是否启用在线合成的情感预测功能
         mSpeechEngine!!.setOptionBoolean(
