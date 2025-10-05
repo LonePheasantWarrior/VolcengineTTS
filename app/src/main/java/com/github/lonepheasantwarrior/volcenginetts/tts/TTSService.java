@@ -369,7 +369,7 @@ public class TTSService extends TextToSpeechService {
 
                 // 在片段之间添加短暂停顿（除了最后一个片段）
                 if (i < segments.size() - 1) {
-                    addPauseBetweenSegments(callback);
+                    addPauseBetweenSegments();
                 }
 
             } catch (Exception e) {
@@ -388,26 +388,13 @@ public class TTSService extends TextToSpeechService {
     }
 
     /**
-     * 在文本片段之间添加短暂停顿
-     *
-     * @param callback 合成回调
+     * 在文本片段之间添加短暂停顿,尽可能避免下一轮播放时因为异步回调延迟导致播放期间收到引擎关闭通知进而带来意外停止
      */
-    private void addPauseBetweenSegments(SynthesisCallback callback) {
+    private void addPauseBetweenSegments() {
         try {
-            // 生成短暂的静音数据（约100ms，基于24kHz采样率）
-            int pauseSamples = 2400; // 24kHz * 0.1s = 2400 samples
-            byte[] silence = new byte[pauseSamples * 2]; // 16-bit = 2 bytes per sample
-
-            int offset = 0;
-            while (offset < silence.length) {
-                int chunkSize = Math.min(callback.getMaxBufferSize(), silence.length - offset);
-                callback.audioAvailable(silence, offset, chunkSize);
-                offset += chunkSize;
-            }
-
-            Log.d(LogTag.INFO, "添加片段间停顿完成");
+            Thread.sleep(300);
         } catch (Exception e) {
-            Log.e(LogTag.ERROR, "添加片段间停顿失败: " + e.getMessage());
+            Log.e(LogTag.ERROR, "PauseBetweenSegments错误: " + e.getMessage());
         }
     }
 }
