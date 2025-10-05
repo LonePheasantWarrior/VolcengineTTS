@@ -21,7 +21,7 @@ public class CheckVoiceData extends Activity {
 
         ArrayList<String> unavailable = new ArrayList<>();
 
-        ArrayList<String> available = new ArrayList<>(Arrays.asList(Constants.supportedLanguages));
+        ArrayList<String> available = new ArrayList<>(Arrays.asList(Constants.SUPPORTED_LANGUAGES));
 
 
         Intent returnData = new Intent();

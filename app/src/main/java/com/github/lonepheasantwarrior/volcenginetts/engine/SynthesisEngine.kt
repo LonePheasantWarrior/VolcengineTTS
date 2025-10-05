@@ -13,20 +13,20 @@ import com.github.lonepheasantwarrior.volcenginetts.R
 import com.github.lonepheasantwarrior.volcenginetts.TTSApplication
 import com.github.lonepheasantwarrior.volcenginetts.common.Constants
 import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
+import com.github.lonepheasantwarrior.volcenginetts.tts.TTSContext
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 语音合成引擎
  */
 class SynthesisEngine(private val context: Context) {
     private var mSpeechEngine: SpeechEngine? = null
-    private var isInitialized: Boolean = false
+    private var isCreated: Boolean = false
     private var isParametersBeenSet: Boolean = false
     private val mainHandler = Handler(Looper.getMainLooper())
     private val synthesisEngineListener: SynthesisEngineListener get() = (context as TTSApplication).synthesisEngineListener
-    private val isAudioQueueDone: AtomicBoolean get() = (context as TTSApplication).isAudioQueueDone
+    private val ttsContext: TTSContext get() = (context as TTSApplication).ttsContext
 
     /**
      * 初始化语音合成引擎
@@ -69,7 +69,7 @@ class SynthesisEngine(private val context: Context) {
         //TTS_WORK_MODE_ALTERNATE, 先发起在线合成，失败后（网络超时），启动离线合成引擎开始合
         mSpeechEngine!!.setOptionInt(
             SpeechEngineDefines.PARAMS_KEY_TTS_WORK_MODE_INT,
-            SpeechEngineDefines.TTS_WORK_MODE_ALTERNATE
+            SpeechEngineDefines.TTS_WORK_MODE_ONLINE
         )
         //配置播放音源
         mSpeechEngine!!.setOptionInt(
@@ -84,7 +84,9 @@ class SynthesisEngine(private val context: Context) {
         //appId
         mSpeechEngine!!.setOptionString(SpeechEngineDefines.PARAMS_KEY_APP_ID_STRING, appId)
         //token
-        mSpeechEngine!!.setOptionString(SpeechEngineDefines.PARAMS_KEY_APP_TOKEN_STRING, token)
+        mSpeechEngine!!.setOptionString(SpeechEngineDefines.PARAMS_KEY_APP_TOKEN_STRING,
+            "Bearer;$token"
+        )
         //语音合成服务簇
         mSpeechEngine!!.setOptionString(
             SpeechEngineDefines.PARAMS_KEY_TTS_ADDRESS_STRING,
@@ -132,7 +134,7 @@ class SynthesisEngine(private val context: Context) {
             getDeviceId()
         )
 
-        isInitialized = true
+        isCreated = true
     }
 
     /**
@@ -144,15 +146,23 @@ class SynthesisEngine(private val context: Context) {
         volumeRatio: Int?,
         pitchRatio: Int?
     ) {
-        if (!isInitialized) {
-            Log.e(LogTag.SDK_ERROR, "语音合成引擎未初始化,无法执行合成参数配置操作")
+        if (!isCreated) {
+            Log.e(LogTag.SDK_ERROR, "语音合成引擎未成功创建,无法执行合成参数配置操作")
             mainHandler.post {
-                Toast.makeText(context, "语音合成引擎未初始化", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "语音合成引擎未成功创建", Toast.LENGTH_SHORT).show()
             }
         }
+        var ret = mSpeechEngine!!.initEngine()
+        if (ret != SpeechEngineDefines.ERR_NO_ERROR) {
+            Log.e(LogTag.SDK_ERROR, "引擎初始化失败: $ret")
+            mainHandler.post {
+                Toast.makeText(context, "引擎初始化失败: $ret", Toast.LENGTH_SHORT).show()
+            }
+        }
+        mSpeechEngine!!.setListener(synthesisEngineListener)
 
         // Directive：启动引擎前调用SYNC_STOP指令，保证前一次请求结束。
-        var ret = mSpeechEngine!!.sendDirective(SpeechEngineDefines.DIRECTIVE_SYNC_STOP_ENGINE, "")
+        ret = mSpeechEngine!!.sendDirective(SpeechEngineDefines.DIRECTIVE_SYNC_STOP_ENGINE, "")
         if (ret != SpeechEngineDefines.ERR_NO_ERROR) {
             Log.e(LogTag.SDK_ERROR, "历史引擎关闭失败: $ret")
             mainHandler.post {
@@ -160,14 +170,6 @@ class SynthesisEngine(private val context: Context) {
             }
         } else {
             setTTSParams(text, speedRatio, volumeRatio, pitchRatio)
-            ret = mSpeechEngine!!.initEngine()
-            if (ret != SpeechEngineDefines.ERR_NO_ERROR) {
-                Log.e(LogTag.SDK_ERROR, "引擎初始化失败: $ret")
-                mainHandler.post {
-                    Toast.makeText(context, "引擎初始化失败: $ret", Toast.LENGTH_SHORT).show()
-                }
-            }
-            mSpeechEngine!!.setListener(synthesisEngineListener)
             ret = mSpeechEngine!!.sendDirective(SpeechEngineDefines.DIRECTIVE_START_ENGINE, "")
             if (ret != SpeechEngineDefines.ERR_NO_ERROR) {
                 Log.e(LogTag.SDK_ERROR, "引擎启动失败: $ret")
@@ -177,7 +179,10 @@ class SynthesisEngine(private val context: Context) {
             }
         }
 
-        isAudioQueueDone.set(false)
+        ttsContext.isAudioQueueDone.set(false)
+        ttsContext.isTTSEngineError.set(false)
+        ttsContext.currentEngineState.set(SpeechEngineDefines.ERR_NO_ERROR)
+        ttsContext.currentEngineMsg.set("")
     }
 
     /**
@@ -234,6 +239,16 @@ class SynthesisEngine(private val context: Context) {
     }
 
     /**
+     * 获取引擎
+     */
+    fun getEngine(): SpeechEngine? {
+        if (!isParametersBeenSet) {
+            Log.i(LogTag.INFO, "引擎参数未初始化")
+        }
+        return mSpeechEngine
+    }
+
+    /**
      * 销毁引擎
      */
     fun destroy() {
@@ -242,7 +257,7 @@ class SynthesisEngine(private val context: Context) {
             mSpeechEngine = null
         }
         Log.i(LogTag.INFO, "引擎已销毁")
-        isInitialized = false
+        isCreated = false
         isParametersBeenSet = false
     }
 

@@ -7,6 +7,7 @@ import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
 import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine
 import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngineListener
 import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction
+import com.github.lonepheasantwarrior.volcenginetts.tts.TTSContext
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
@@ -16,8 +17,7 @@ class TTSApplication: Application() {
     lateinit var synthesisEngineListener: SynthesisEngineListener private set
     lateinit var settingsFunction: SettingsFunction private set
 
-    val audioDataQueue: BlockingQueue<ByteArray?> = LinkedBlockingQueue<ByteArray?>()
-    val isAudioQueueDone: AtomicBoolean = AtomicBoolean(true)
+    val ttsContext: TTSContext = TTSContext()
 
     override fun onCreate() {
         super.onCreate()

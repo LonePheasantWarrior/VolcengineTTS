@@ -57,6 +57,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
+import com.github.lonepheasantwarrior.volcenginetts.common.Constants
 import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine
 import com.github.lonepheasantwarrior.volcenginetts.ui.theme.VolcengineTTSTheme
 import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction
@@ -97,7 +98,7 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
         private set
     var token by mutableStateOf("")
         private set
-    var serviceCluster by mutableStateOf("")
+    var serviceCluster by mutableStateOf(Constants.DEFAULT_SERVICE_CLUSTER)
         private set
     var isEmotional by mutableStateOf(false)
 
@@ -190,9 +191,11 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
         }
 
         // 检查Service Cluster
+        // 如果该字段未填写内容则填充默认值
         if (serviceCluster.isBlank()) {
-            isServiceClusterError = true
-            isValid = false
+            serviceCluster = Constants.DEFAULT_SERVICE_CLUSTER
+            isServiceClusterError = false
+            isValid = true
         }
 
         // 检查选中的声音ID

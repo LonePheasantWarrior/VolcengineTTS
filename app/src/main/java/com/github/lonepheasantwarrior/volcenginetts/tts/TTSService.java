@@ -1,15 +1,19 @@
 package com.github.lonepheasantwarrior.volcenginetts.tts;
 
+import android.media.AudioFormat;
 import android.os.Handler;
 import android.os.Looper;
 import android.speech.tts.SynthesisCallback;
 import android.speech.tts.SynthesisRequest;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeechService;
+import android.util.Log;
 import android.widget.Toast;
 
+import com.github.lonepheasantwarrior.volcenginetts.R;
 import com.github.lonepheasantwarrior.volcenginetts.TTSApplication;
 import com.github.lonepheasantwarrior.volcenginetts.common.Constants;
+import com.github.lonepheasantwarrior.volcenginetts.common.LogTag;
 import com.github.lonepheasantwarrior.volcenginetts.common.SettingsData;
 import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine;
 import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction;
@@ -17,9 +21,7 @@ import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TTSService extends TextToSpeechService {
 
@@ -31,8 +33,7 @@ public class TTSService extends TextToSpeechService {
     private SynthesisEngine synthesisEngine;
     private SettingsFunction settingsFunction;
 
-    private BlockingQueue<byte[]> audioDataQueue;
-    private AtomicBoolean isAudioQueueDone;
+    private TTSContext ttsContext;
 
     @Override
     public void onCreate() {
@@ -40,8 +41,7 @@ public class TTSService extends TextToSpeechService {
         TTSApplication ttsApplication = ((TTSApplication) getApplicationContext());
         synthesisEngine = ttsApplication.getSynthesisEngine();
         settingsFunction = ttsApplication.getSettingsFunction();
-        audioDataQueue = ttsApplication.getAudioDataQueue();
-        isAudioQueueDone = ttsApplication.isAudioQueueDone();
+        ttsContext = ttsApplication.getTtsContext();
     }
 
     @Override
@@ -84,29 +84,51 @@ public class TTSService extends TextToSpeechService {
             callback.error();
             return;
         }
+
+        if (request.getCharSequenceText() == null || request.getCharSequenceText().toString().isBlank()) {
+            Log.d(LogTag.ERROR, "待合成文本为空");
+            callback.start(16000,
+                    AudioFormat.ENCODING_PCM_16BIT, 1 /* Number of channels. */);
+            callback.done();
+            return;
+        }
+        Log.d(LogTag.INFO, "待合成文本长度: " + request.getCharSequenceText().length());
+        Log.d(LogTag.INFO, "待合成文本: " + request.getCharSequenceText());
+
         synthesisEngine.create(settings.getAppId(), settings.getToken(), settings.getSelectedSpeakerId(), settings.getServiceCluster(), settings.isEmotional());
         synthesisEngine.startEngine(request.getCharSequenceText(), request.getSpeechRate(), null, request.getPitch());
 
         try {
+            callback.start(getApplicationContext().getResources().getInteger(R.integer.tts_sample_rate)
+                    , AudioFormat.ENCODING_PCM_16BIT, 1 /* Number of channels. */);
+
+            Log.d(LogTag.INFO, "开始监听语音合成音频回调队列...");
             long startTime = System.currentTimeMillis();
             while (true) {
-                final long TIMEOUT_MS = 10000;
+                final long TIMEOUT_MS = 15000;
                 if (System.currentTimeMillis() - startTime > TIMEOUT_MS) {
+                    Log.e(LogTag.ERROR, "监听语音合成音频回调超时,放弃本次合成任务");
                     break;
                 }
-                byte[] chunk = audioDataQueue.poll(100, TimeUnit.MILLISECONDS);
+                byte[] chunk = ttsContext.audioDataQueue.poll(100, TimeUnit.MILLISECONDS);
                 if (chunk != null) {
                     int offset = 0;
                     while (offset < chunk.length) {
                         int chunkSize = Math.min(callback.getMaxBufferSize(), chunk.length - offset);
+                        Log.d(LogTag.INFO, "向系统TTS服务提供音频Callback,数据长度: " + chunkSize);
                         callback.audioAvailable(chunk, offset, chunkSize);
                         offset += chunkSize;
                     }
                 }
-                if (isAudioQueueDone.get()) break;
+                if (ttsContext.isAudioQueueDone.get()) break;
             }
-            callback.done();
+            if (ttsContext.isTTSEngineError.get()) {
+                callback.error();
+            }else {
+                callback.done();
+            }
         } catch (Exception e) {
+            Log.e(LogTag.ERROR, "执行音频Callback发生错误: " + e.getMessage());
             callback.error();
         }
         synthesisEngine.destroy();
@@ -116,7 +138,7 @@ public class TTSService extends TextToSpeechService {
         Locale locale = new Locale(lang, country, variant);
         boolean isLanguage = false;
         boolean isCountry = false;
-        for (String lan : Constants.supportedLanguages) {
+        for (String lan : Constants.SUPPORTED_LANGUAGES) {
             String[] temp = lan.split("-");
             Locale locale1 = new Locale(temp[0], temp[1]);
             if (locale.getISO3Language().equals(locale1.getISO3Language())) {

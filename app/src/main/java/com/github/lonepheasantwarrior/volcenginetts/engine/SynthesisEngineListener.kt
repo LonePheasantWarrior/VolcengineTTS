@@ -8,36 +8,52 @@ import android.widget.Toast
 import com.bytedance.speech.speechengine.SpeechEngineDefines
 import com.github.lonepheasantwarrior.volcenginetts.TTSApplication
 import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.atomic.AtomicBoolean
+import com.github.lonepheasantwarrior.volcenginetts.tts.TTSContext
 
 /**
  * 语音合成引擎回调监听服务
  */
 class SynthesisEngineListener(private val context: Context): com.bytedance.speech.speechengine.SpeechEngine.SpeechListener {
     private val mainHandler = Handler(Looper.getMainLooper())
-
-    private val audioDataQueue: BlockingQueue<ByteArray?> get() = (context as TTSApplication).audioDataQueue
-    private val isAudioQueueDone: AtomicBoolean get() = (context as TTSApplication).isAudioQueueDone
+    private val synthesisEngine: SynthesisEngine get() = (context as TTSApplication).synthesisEngine
+    private val ttsContext: TTSContext get() = (context as TTSApplication).ttsContext
 
     override fun onSpeechMessage(type: Int, data: ByteArray?, len: Int) {
+        ttsContext.currentEngineState.set(type)
         var stdData = ""
         if (data != null && data.isNotEmpty()) {
             stdData = String(data)
         }
+        ttsContext.currentEngineMsg.set(stdData)
 
         when (type) {
             SpeechEngineDefines.MESSAGE_TYPE_ENGINE_START -> {
                 Log.d(LogTag.SDK_INFO, "引擎启动通知: $stdData")
+                val speechEngine = synthesisEngine.getEngine()
+                if (speechEngine == null) {
+                    Log.e(LogTag.SDK_ERROR, "未能获取到语音合成引擎实例")
+                    mainHandler.post {
+                        Toast.makeText(context, "未能获取到语音合成引擎实例", Toast.LENGTH_SHORT).show()
+                    }
+                    return
+                }
+                //连续合成场景下，使用该指令触发一次合成，可以多次调用。推荐的调用策略如下：
+                //第一句文本，直接调用；
+                //非首句文本，在收到 合成结束回调 后发送；
+                //使用 SDK 内置播放器时，如果返回值为 ERR_SYNTHESIS_PLAYER_IS_BUSY，表明内部缓存已经耗尽，应该在收到下一个 播放结回调时 再次调用；
+                //“合成”指令必须要在收到 MESSAGE_TYPE_ENGINE_START 后发送
+                speechEngine.sendDirective(SpeechEngineDefines.DIRECTIVE_SYNTHESIS, "")
             }
 
             SpeechEngineDefines.MESSAGE_TYPE_ENGINE_STOP -> {
+                ttsContext.isAudioQueueDone.set(true)
                 Log.d(LogTag.SDK_INFO, "引擎关闭通知: $stdData")
             }
 
             SpeechEngineDefines.MESSAGE_TYPE_ENGINE_ERROR -> {
+                ttsContext.isAudioQueueDone.set(true)
+                ttsContext.isTTSEngineError.set(true)
                 Log.e(LogTag.SDK_ERROR, "引擎错误通知: $stdData")
-                isAudioQueueDone.set(true)
                 mainHandler.post {
                     Toast.makeText(context, "引擎错误: $stdData", Toast.LENGTH_SHORT).show()
                 }
@@ -69,8 +85,8 @@ class SynthesisEngineListener(private val context: Context): com.bytedance.speec
                     dataSize = data.size
                 }
                 Log.d(LogTag.SDK_INFO, "引擎音频数据通知, 数据大小: $dataSize")
-                audioDataQueue.put(data)
-                isAudioQueueDone.set(false)
+                ttsContext.audioDataQueue.put(data)
+                ttsContext.isAudioQueueDone.set(false)
             }
 
             SpeechEngineDefines.MESSAGE_TYPE_TTS_AUDIO_DATA_END -> {
@@ -79,8 +95,8 @@ class SynthesisEngineListener(private val context: Context): com.bytedance.speec
                     dataSize = data.size
                 }
                 Log.d(LogTag.SDK_INFO, "引擎音频数据(END)通知, 数据大小: $dataSize")
-                audioDataQueue.put(data)
-                isAudioQueueDone.set(true)
+                ttsContext.audioDataQueue.put(data)
+                ttsContext.isAudioQueueDone.set(true)
             }
 
             else -> {
