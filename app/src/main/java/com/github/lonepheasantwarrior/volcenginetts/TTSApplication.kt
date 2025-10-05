@@ -8,16 +8,12 @@ import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine
 import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngineListener
 import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction
 import com.github.lonepheasantwarrior.volcenginetts.tts.TTSContext
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.atomic.AtomicBoolean
 
 class TTSApplication: Application() {
     lateinit var synthesisEngine: SynthesisEngine private set
     lateinit var synthesisEngineListener: SynthesisEngineListener private set
     lateinit var settingsFunction: SettingsFunction private set
-
-    val ttsContext: TTSContext = TTSContext()
+    lateinit var ttsContext: TTSContext private set
 
     override fun onCreate() {
         super.onCreate()
@@ -29,5 +25,6 @@ class TTSApplication: Application() {
         synthesisEngine = SynthesisEngine(this)
         synthesisEngineListener = SynthesisEngineListener(this)
         settingsFunction = SettingsFunction(this)
+        ttsContext = TTSContext()
     }
 }
