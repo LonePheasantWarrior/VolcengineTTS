@@ -42,7 +42,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
@@ -95,14 +94,19 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
     var appId by mutableStateOf(" ")
     var token by mutableStateOf(" ")
     var serviceCluster by mutableStateOf("") //接口区域ID
-    var textToSynthesize by mutableStateOf("")
     var isEmotional by mutableStateOf(false) // 感情朗读开关
 
     // UI 交互状态
     var selectedScene by mutableStateOf("")
     var selectedSpeakerId by mutableStateOf("") // 存储选中的声音ID
     var selectedSpeakerName by mutableStateOf("") // 存储选中的声音名称
-    
+
+    // 错误状态 - 用于UI提示
+    var isAppIdError by mutableStateOf(false)
+    var isTokenError by mutableStateOf(false)
+    var isServiceClusterError by mutableStateOf(false)
+    var isSpeakerError by mutableStateOf(false)
+
     init {
         // 初始化时加载保存的设置
         loadSettings()
@@ -112,7 +116,7 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
     fun getSceneCategories(): Array<String> {
         return getApplication<Application>().resources.getStringArray(R.array.scene_categories)
     }
-    
+
     fun getSpeakerList(): Array<String> {
         return getApplication<Application>().resources.getStringArray(R.array.speaker_list)
     }
@@ -126,12 +130,60 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /**
+     * 验证设置是否有效
+     * @return 验证结果
+     */
+    private fun validateSettings(): Boolean {
+        // 重置错误状态
+        isAppIdError = false
+        isTokenError = false
+        isServiceClusterError = false
+        isSpeakerError = false
+
+        var isValid = true
+
+        // 检查App ID
+        if (appId.isBlank()) {
+            isAppIdError = true
+            isValid = false
+        }
+
+        // 检查Token
+        if (token.isBlank()) {
+            isTokenError = true
+            isValid = false
+        }
+
+        // 检查Service Cluster
+        if (serviceCluster.isBlank()) {
+            isServiceClusterError = true
+            isValid = false
+        }
+
+        // 检查选中的声音ID
+        if (selectedSpeakerId.isBlank()) {
+            isSpeakerError = true
+            isValid = false
+        }
+
+        return isValid
+    }
+
+    /**
      * 保存设置到持久化存储
      */
     fun saveSettings() {
-        settingsFunction.saveSettings(appId, token, selectedSpeakerId, serviceCluster, isEmotional)
+        if (validateSettings()) {
+            settingsFunction.saveSettings(
+                appId,
+                token,
+                selectedSpeakerId,
+                serviceCluster,
+                isEmotional
+            )
+        }
     }
-    
+
     /**
      * 从持久化存储加载设置
      */
@@ -154,7 +206,7 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
         }
         isEmotional = savedIsEmotional
     }
-    
+
     /**
      * 根据声音ID查找声音名称
      */
@@ -163,16 +215,11 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
         val speakerInfo = speakerList
             .map { it.split("|") }
             .find { it.size >= 3 && it[2] == speakerId } // ID在索引2的位置
-        
+
         if (speakerInfo != null) {
             selectedSpeakerName = speakerInfo[1] // 名称在索引1的位置
             selectedScene = speakerInfo[0] // 场景在索引0的位置
         }
-    }
-
-    fun synthesizeSpeech() {
-        // 语音合成的业务逻辑
-        // 实际应用中这里会调用火山引擎API
     }
 }
 
@@ -183,32 +230,33 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
     val viewModel: VolcengineTTSViewModel = viewModel(factory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-            val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
+            val application =
+                checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
             return VolcengineTTSViewModel(application) as T
         }
     })
-    
+
     // 获取数据
     val sceneCategories = viewModel.getSceneCategories()
-    
+
     // 初始化默认场景（仅在未设置时）
     if (viewModel.selectedScene.isEmpty()) {
         viewModel.selectedScene = sceneCategories.firstOrNull() ?: ""
     }
-    
+
     // 过滤当前场景的声音
     val filteredSpeakers = viewModel.filterSpeakersByScene(viewModel.selectedScene)
-    
+
     // 初始化默认声音（仅在未设置时）
     if (viewModel.selectedSpeakerId.isEmpty() && filteredSpeakers.isNotEmpty()) {
         viewModel.selectedSpeakerId = filteredSpeakers.first().id
         viewModel.selectedSpeakerName = filteredSpeakers.first().name
     }
-    
+
     // 下拉菜单状态
     var sceneDropdownExpanded by remember { mutableStateOf(false) }
     var speakerDropdownExpanded by remember { mutableStateOf(false) }
-    
+
     // 使用垂直滚动布局以适应不同屏幕尺寸
     Box(
         modifier = modifier.fillMaxSize()
@@ -226,12 +274,15 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
                     appId = viewModel.appId,
                     token = viewModel.token,
                     serviceCluster = viewModel.serviceCluster,
+                    isAppIdError = viewModel.isAppIdError,
+                    isTokenError = viewModel.isTokenError,
+                    isServiceClusterError = viewModel.isServiceClusterError,
                     onAppIdChange = { viewModel.appId = it },
                     onTokenChange = { viewModel.token = it },
                     onServiceClusterChange = { viewModel.serviceCluster = it }
                 )
             }
-            
+
             item {
                 // 场景和声音配置组 (selectedScene, selectedSpeakerName, isEmotional)
                 TTSVoiceConfigurationInputs(
@@ -240,6 +291,7 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
                     selectedSpeakerName = viewModel.selectedSpeakerName,
                     speakers = filteredSpeakers,
                     isEmotional = viewModel.isEmotional,
+                    isSpeakerError = viewModel.isSpeakerError,
                     sceneDropdownExpanded = sceneDropdownExpanded,
                     speakerDropdownExpanded = speakerDropdownExpanded,
                     onSceneExpandedChange = { sceneDropdownExpanded = it },
@@ -281,6 +333,9 @@ fun TTSBasicConfigurationInputs(
     appId: String,
     token: String,
     serviceCluster: String,
+    isAppIdError: Boolean,
+    isTokenError: Boolean,
+    isServiceClusterError: Boolean,
     onAppIdChange: (String) -> Unit,
     onTokenChange: (String) -> Unit,
     onServiceClusterChange: (String) -> Unit
@@ -306,7 +361,7 @@ fun TTSBasicConfigurationInputs(
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.primary
             )
-            
+
             // App ID 输入框
             OutlinedTextField(
                 value = appId,
@@ -314,11 +369,24 @@ fun TTSBasicConfigurationInputs(
                 label = { Text(stringResource(id = R.string.input_app_id)) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                )
+                    focusedBorderColor = if (isAppIdError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = if (isAppIdError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(
+                        alpha = 0.5f
+                    ),
+                ),
+                isError = isAppIdError,
+                supportingText = if (isAppIdError) {
+                    {
+                        Text(
+                            text = "App ID不能为空",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                } else {
+                    null
+                }
             )
-            
+
             // Token 输入框
             OutlinedTextField(
                 value = token,
@@ -326,9 +394,22 @@ fun TTSBasicConfigurationInputs(
                 label = { Text(stringResource(id = R.string.input_token)) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                )
+                    focusedBorderColor = if (isTokenError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = if (isTokenError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(
+                        alpha = 0.5f
+                    ),
+                ),
+                isError = isTokenError,
+                supportingText = if (isTokenError) {
+                    {
+                        Text(
+                            text = "Token不能为空",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                } else {
+                    null
+                }
             )
 
             // API资源ID 输入框
@@ -338,9 +419,22 @@ fun TTSBasicConfigurationInputs(
                 label = { Text(stringResource(id = R.string.input_service_cluster)) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                )
+                    focusedBorderColor = if (isServiceClusterError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = if (isServiceClusterError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(
+                        alpha = 0.5f
+                    ),
+                ),
+                isError = isServiceClusterError,
+                supportingText = if (isServiceClusterError) {
+                    {
+                        Text(
+                            text = "Service Cluster不能为空",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                } else {
+                    null
+                }
             )
         }
     }
@@ -353,6 +447,7 @@ fun TTSVoiceConfigurationInputs(
     selectedSpeakerName: String,
     speakers: List<SpeakerInfo>,
     isEmotional: Boolean,
+    isSpeakerError: Boolean,
     sceneDropdownExpanded: Boolean,
     speakerDropdownExpanded: Boolean,
     onSceneExpandedChange: (Boolean) -> Unit,
@@ -382,7 +477,7 @@ fun TTSVoiceConfigurationInputs(
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.primary
             )
-            
+
             // 场景选择器
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -393,7 +488,7 @@ fun TTSVoiceConfigurationInputs(
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                
+
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -433,7 +528,7 @@ fun TTSVoiceConfigurationInputs(
                     val configuration = LocalConfiguration.current
                     val menuMaxHeight = 0.7 * configuration.screenHeightDp.dp
                     val menuMaxWidth = 0.8 * configuration.screenWidthDp.dp
-                    
+
                     DropdownMenu(
                         expanded = sceneDropdownExpanded,
                         onDismissRequest = { onSceneExpandedChange(false) },
@@ -452,7 +547,7 @@ fun TTSVoiceConfigurationInputs(
                     }
                 }
             }
-            
+
             // 声音选择器
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -463,14 +558,14 @@ fun TTSVoiceConfigurationInputs(
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                
+
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        containerColor = if (isSpeakerError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant,
                     )
                 ) {
                     Button(
@@ -480,21 +575,33 @@ fun TTSVoiceConfigurationInputs(
                             .padding(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            contentColor = if (isSpeakerError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
                         ),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                     ) {
                         Text(
-                            text = selectedSpeakerName,
-                            modifier = Modifier.weight(1f)
+                            text = selectedSpeakerName.ifEmpty { "请选择声音" },
+                            modifier = Modifier.weight(1f),
+                            color = if (isSpeakerError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
                         )
                         Icon(
                             imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = null
+                            contentDescription = null,
+                            tint = if (isSpeakerError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
                 }
-                
+
+                // 声音选择错误提示
+                if (isSpeakerError) {
+                    Text(
+                        text = "请选择一个声音",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    )
+                }
+
                 AnimatedVisibility(
                     visible = speakerDropdownExpanded,
                     enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
@@ -503,7 +610,7 @@ fun TTSVoiceConfigurationInputs(
                     val configuration = LocalConfiguration.current
                     val menuMaxHeight = 0.7 * configuration.screenHeightDp.dp
                     val menuMaxWidth = 0.8 * configuration.screenWidthDp.dp
-                    
+
                     DropdownMenu(
                         expanded = speakerDropdownExpanded,
                         onDismissRequest = { onSpeakerExpandedChange(false) },
@@ -522,7 +629,7 @@ fun TTSVoiceConfigurationInputs(
                     }
                 }
             }
-            
+
             // 情感朗读开关
             Row(
                 modifier = Modifier.fillMaxWidth(),
