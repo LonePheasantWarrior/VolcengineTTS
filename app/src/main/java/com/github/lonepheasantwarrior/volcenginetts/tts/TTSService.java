@@ -18,9 +18,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TTSService extends TextToSpeechService {
+
     @Nullable
     private volatile String[] mCurrentLanguage = null;
 
@@ -74,20 +76,28 @@ public class TTSService extends TextToSpeechService {
         synthesisEngine.startEngine(request.getCharSequenceText(), request.getSpeechRate(), null, request.getPitch());
 
         try {
+            long startTime = System.currentTimeMillis();
             while (true) {
-                byte[] chunk = audioDataQueue.take();
-                if (isAudioQueueDone.get()) break;
-                int offset = 0;
-                while (offset < chunk.length) {
-                    int chunkSize = Math.min(callback.getMaxBufferSize(), chunk.length - offset);
-                    callback.audioAvailable(chunk, offset, chunkSize);
-                    offset += chunkSize;
+                final long TIMEOUT_MS = 10000;
+                if (System.currentTimeMillis() - startTime > TIMEOUT_MS) {
+                    break;
                 }
+                byte[] chunk = audioDataQueue.poll(100, TimeUnit.MILLISECONDS);
+                if (chunk != null) {
+                    int offset = 0;
+                    while (offset < chunk.length) {
+                        int chunkSize = Math.min(callback.getMaxBufferSize(), chunk.length - offset);
+                        callback.audioAvailable(chunk, offset, chunkSize);
+                        offset += chunkSize;
+                    }
+                }
+                if (isAudioQueueDone.get()) break;
             }
             callback.done();
         } catch (Exception e) {
             callback.error();
         }
+        synthesisEngine.destroy();
     }
 
     public static int getIsLanguageAvailable(String lang, String country, String variant) {

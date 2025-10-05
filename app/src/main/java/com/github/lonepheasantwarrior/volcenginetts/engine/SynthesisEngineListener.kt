@@ -37,6 +37,7 @@ class SynthesisEngineListener(private val context: Context): com.bytedance.speec
 
             SpeechEngineDefines.MESSAGE_TYPE_ENGINE_ERROR -> {
                 Log.e(LogTag.SDK_ERROR, "引擎错误通知: $stdData")
+                isAudioQueueDone.set(true)
                 mainHandler.post {
                     Toast.makeText(context, "引擎错误: $stdData", Toast.LENGTH_SHORT).show()
                 }
