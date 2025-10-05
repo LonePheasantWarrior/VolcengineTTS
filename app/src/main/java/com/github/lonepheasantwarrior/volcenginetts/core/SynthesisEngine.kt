@@ -1,5 +1,7 @@
 package com.github.lonepheasantwarrior.volcenginetts.core
 
+import android.content.Context
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -10,26 +12,48 @@ import com.bytedance.speech.speechengine.SpeechEngineGenerator
 import com.github.lonepheasantwarrior.volcenginetts.R
 import com.github.lonepheasantwarrior.volcenginetts.common.Dictionary
 import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
+import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
 
 /**
  * 语音合成引擎
  */
-class SynthesisEngine {
+class SynthesisEngine(private val context: Context) {
     private var mSpeechEngine: SpeechEngine? = null
     private var isInitialized: Boolean = false
+    private var isParametersBeenSet: Boolean = false
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val synthesisEngineListener: SynthesisEngineListener get() = (context as TTSApplication).synthesisEngineListener
+
+    /**
+     * 获取设备ID
+     */
+    private fun getDeviceId(): String {
+        // 使用设备硬件信息组合生成设备ID
+        val sb = StringBuilder()
+        sb.append(Build.BOARD).append("/")
+        sb.append(Build.BRAND).append("/")
+        sb.append(Build.DEVICE).append("/")
+        sb.append(Build.HARDWARE).append("/")
+        sb.append(Build.MODEL).append("/")
+        sb.append(Build.PRODUCT).append("/")
+        sb.append(Build.TAGS).append("/")
+        sb.append(Build.TYPE).append("/")
+        sb.append(Build.USER)
+
+        return generateMD5(sb.toString())
+    }
 
     /**
      * 初始化语音合成引擎
      */
-    fun init(
-        context: android.content.Context,
+    fun create(
         appId: String,
         token: String,
         speakerId: String,
         serviceCluster: String,
         emotional: Boolean
-    ) {
+    ): SpeechEngine {
         if (mSpeechEngine != null) {
             destroy()
         }
@@ -37,14 +61,14 @@ class SynthesisEngine {
         mSpeechEngine!!.createEngine()
         Log.d(LogTag.SDK_INFO, "语音合成SDK版本号: " + mSpeechEngine!!.version)
         // 初始化引擎配置
-        initInner(context, appId, token, speakerId, serviceCluster, emotional)
+        setEngineParams(appId, token, speakerId, serviceCluster, emotional)
+        return mSpeechEngine!!
     }
 
     /**
      * 初始化语音合成引擎相关配置
      */
-    fun initInner(
-        context: android.content.Context,
+    private fun setEngineParams(
         appId: String,
         token: String,
         speakerId: String,
@@ -87,7 +111,7 @@ class SynthesisEngine {
             SpeechEngineDefines.PARAMS_KEY_TTS_URI_STRING,
             context.getString(R.string.tts_service_api_path)
         )
-        //语音合成服务所用集群
+        //语音合成服务所用服务簇ID
         mSpeechEngine!!.setOptionString(
             SpeechEngineDefines.PARAMS_KEY_TTS_CLUSTER_STRING, serviceCluster
         )
@@ -109,17 +133,68 @@ class SynthesisEngine {
             SpeechEngineDefines.PARAMS_KEY_TTS_ENABLE_PLAYER_BOOL, false
         )
         //是否启用在线合成的情感预测功能
-        mSpeechEngine!!.setOptionBoolean(SpeechEngineDefines.PARAMS_KEY_TTS_WITH_INTENT_BOOL, emotional)
+        mSpeechEngine!!.setOptionBoolean(
+            SpeechEngineDefines.PARAMS_KEY_TTS_WITH_INTENT_BOOL,
+            emotional
+        )
+        //User ID（用以辅助定位线上用户问题）
+        mSpeechEngine!!.setOptionString(
+            SpeechEngineDefines.PARAMS_KEY_UID_STRING,
+            generateMD5(token)
+        )
+        //Device ID（用以辅助定位线上用户问题）
+        mSpeechEngine!!.setOptionString(
+            SpeechEngineDefines.PARAMS_KEY_DEVICE_ID_STRING,
+            getDeviceId()
+        )
 
         isInitialized = true
     }
 
-    fun setTTSParams(
-        context: android.content.Context,
+    /**
+     * 启动引擎
+     */
+    private fun startEngine(
         text: CharSequence?,
-        speedRatio: Double,
-        volumeRatio: Double,
-        pitchRatio: Double
+        speedRatio: Int?,
+        volumeRatio: Int?,
+        pitchRatio: Int?
+    ) {
+        // Directive：启动引擎前调用SYNC_STOP指令，保证前一次请求结束。
+        var ret = mSpeechEngine!!.sendDirective(SpeechEngineDefines.DIRECTIVE_SYNC_STOP_ENGINE, "")
+        if (ret != SpeechEngineDefines.ERR_NO_ERROR) {
+            Log.e(LogTag.SDK_ERROR, "历史引擎关闭失败: $ret")
+            mainHandler.post {
+                Toast.makeText(context, "历史引擎关闭失败: $ret", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            setTTSParams(text, speedRatio, volumeRatio, pitchRatio)
+            ret = mSpeechEngine!!.initEngine()
+            if (ret != SpeechEngineDefines.ERR_NO_ERROR) {
+                Log.e(LogTag.SDK_ERROR, "引擎初始化失败: $ret")
+                mainHandler.post {
+                    Toast.makeText(context, "引擎初始化失败: $ret", Toast.LENGTH_SHORT).show()
+                }
+            }
+            mSpeechEngine!!.setListener(synthesisEngineListener)
+            ret = mSpeechEngine!!.sendDirective(SpeechEngineDefines.DIRECTIVE_START_ENGINE, "")
+            if (ret != SpeechEngineDefines.ERR_NO_ERROR) {
+                Log.e(LogTag.SDK_ERROR, "引擎启动失败: $ret")
+                mainHandler.post {
+                    Toast.makeText(context, "引擎启动失败: $ret", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    /**
+     * 设置语音合成参数
+     */
+    fun setTTSParams(
+        text: CharSequence?,
+        speedRatio: Int?,
+        volumeRatio: Int?,
+        pitchRatio: Int?
     ) {
         if (!isInitialized) {
             throw RuntimeException("语音合成引擎未初始化,无法执行合成参数配置操作")
@@ -141,7 +216,31 @@ class SynthesisEngine {
         mSpeechEngine!!.setOptionString(
             SpeechEngineDefines.PARAMS_KEY_TTS_TEXT_STRING, text as String
         )
-        //TODO 功能待实现, 参考com.bytedance.speech.speechdemo.TtsNormalActivity#configStartTtsParams
+
+
+        //用于控制 TTS 音频的语速，支持的配置范围参考火山官网 语音技术/语音合成/离在线语音合成SDK/参数说明 文档
+        if (speedRatio != null) {
+            mSpeechEngine!!.setOptionInt(
+                SpeechEngineDefines.PARAMS_KEY_TTS_SPEED_INT,
+                speedRatio
+            )
+        }
+        //用于控制 TTS 音频的音量，支持的配置范围参考火山官网 语音技术/语音合成/离在线语音合成SDK/参数说明 文档
+        if (volumeRatio != null) {
+            mSpeechEngine!!.setOptionInt(
+                SpeechEngineDefines.PARAMS_KEY_TTS_VOLUME_INT,
+                volumeRatio
+            )
+        }
+        //用于控制 TTS 音频的音高，支持的配置范围参考火山官网 语音技术/语音合成/离在线语音合成SDK/参数说明 文档
+        if (pitchRatio != null) {
+            mSpeechEngine!!.setOptionInt(
+                SpeechEngineDefines.PARAMS_KEY_TTS_PITCH_INT,
+                pitchRatio
+            )
+        }
+
+        isParametersBeenSet = true
     }
 
     /**
@@ -154,5 +253,28 @@ class SynthesisEngine {
         }
         Log.i(LogTag.INFO, "引擎已销毁")
         isInitialized = false
+        isParametersBeenSet = false
+    }
+
+    /**
+     * 生成字符串的MD5摘要
+     */
+    private fun generateMD5(input: String): String {
+        return try {
+            val md = MessageDigest.getInstance("MD5")
+            val messageDigest = md.digest(input.toByteArray())
+            val hexString = StringBuilder()
+            for (b in messageDigest) {
+                val hex = Integer.toHexString(0xFF and b.toInt())
+                if (hex.length == 1) {
+                    hexString.append('0')
+                }
+                hexString.append(hex)
+            }
+            hexString.toString()
+        } catch (e: NoSuchAlgorithmException) {
+            Log.e(LogTag.ERROR, "MD5 algorithm not available", e)
+            ""
+        }
     }
 }
