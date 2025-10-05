@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!--可选值 [8000,16000,22050,24000,32000,44100,48000]-->
+    <!--目前(2025/10/05)仅24000可用-->
     <integer name="tts_sample_rate">24000</integer>
 </resources>
