@@ -28,13 +28,21 @@ public class TTSService extends TextToSpeechService {
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    private final TTSApplication ttsApplication = ((TTSApplication) getApplicationContext());
+    private SynthesisEngine synthesisEngine;
+    private SettingsFunction settingsFunction;
 
-    private final SynthesisEngine synthesisEngine = ttsApplication.getSynthesisEngine();
-    private final SettingsFunction settingsFunction = ttsApplication.getSettingsFunction();
+    private BlockingQueue<byte[]> audioDataQueue;
+    private AtomicBoolean isAudioQueueDone;
 
-    private final BlockingQueue<byte[]> audioDataQueue = ttsApplication.getAudioDataQueue();
-    private final AtomicBoolean isAudioQueueDone = ttsApplication.isAudioQueueDone();
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        TTSApplication ttsApplication = ((TTSApplication) getApplicationContext());
+        synthesisEngine = ttsApplication.getSynthesisEngine();
+        settingsFunction = ttsApplication.getSettingsFunction();
+        audioDataQueue = ttsApplication.getAudioDataQueue();
+        isAudioQueueDone = ttsApplication.isAudioQueueDone();
+    }
 
     @Override
     protected String[] onGetLanguage() {
