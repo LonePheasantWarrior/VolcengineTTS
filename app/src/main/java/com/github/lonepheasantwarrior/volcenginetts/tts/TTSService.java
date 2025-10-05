@@ -21,7 +21,6 @@ import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
 public class TTSService extends TextToSpeechService {
 
@@ -79,6 +78,8 @@ public class TTSService extends TextToSpeechService {
 
     @Override
     protected void onSynthesizeText(SynthesisRequest request, SynthesisCallback callback) {
+        long onSynthesizeStartTime = System.currentTimeMillis();
+
         SettingsData settings = settingsFunction.getSettings();
         if (!checkSettings(settings)) {
             callback.error();
@@ -110,7 +111,7 @@ public class TTSService extends TextToSpeechService {
                     Log.e(LogTag.ERROR, "监听语音合成音频回调超时,放弃本次合成任务");
                     break;
                 }
-                byte[] chunk = ttsContext.audioDataQueue.poll(100, TimeUnit.MILLISECONDS);
+                byte[] chunk = ttsContext.audioDataQueue.take();
                 if (chunk != null) {
                     Log.d(LogTag.INFO, "向系统TTS服务提供音频Callback,数据长度: " + chunk.length);
                     int offset = 0;
@@ -132,6 +133,8 @@ public class TTSService extends TextToSpeechService {
             callback.error();
         }
         synthesisEngine.destroy();
+
+        Log.d(LogTag.INFO, "语音合成任务执行完毕,耗时: " + (System.currentTimeMillis() - onSynthesizeStartTime) / 1000);
     }
 
     public static int getIsLanguageAvailable(String lang, String country, String variant) {
