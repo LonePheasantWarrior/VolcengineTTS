@@ -6,6 +6,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.github.lonepheasantwarrior.volcenginetts.R;
+import com.github.lonepheasantwarrior.volcenginetts.common.LogTag;
 
 import java.util.Locale;
 import java.util.MissingResourceException;
@@ -41,7 +42,7 @@ public final class TtsVoiceSample {
         } else if (language.equals(new Locale("ar").getISO3Language())) {
             return context.getString(R.string.tts_sample_ar);
         } else {
-            Log.d("TTS", locale.toString());
+            Log.d(LogTag.INFO, "使用默认Locate: " + locale);
             return context.getString(R.string.tts_sample_default);
         }
     }
