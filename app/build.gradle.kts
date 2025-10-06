@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.github.lonepheasantwarrior.volcenginetts"
-        minSdk = 33
+        minSdk = 31
         targetSdk = 36
         versionCode = 10002
         versionName = "1.0.2"
