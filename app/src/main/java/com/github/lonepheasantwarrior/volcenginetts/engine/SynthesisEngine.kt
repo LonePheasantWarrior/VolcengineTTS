@@ -259,6 +259,11 @@ class SynthesisEngine(private val context: Context) {
         Log.i(LogTag.INFO, "引擎已销毁")
         isCreated = false
         isParametersBeenSet = false
+
+        ttsContext.isAudioQueueDone.set(false)
+        ttsContext.isTTSEngineError.set(false)
+        ttsContext.currentEngineState.set(SpeechEngineDefines.ERR_NO_ERROR)
+        ttsContext.currentEngineMsg.set("")
     }
 
     /**

@@ -391,9 +391,30 @@ public class TTSService extends TextToSpeechService {
      */
     private void addPauseBetweenSegments() {
         try {
-            Thread.sleep(300);
+            Thread.sleep(200);
         } catch (Exception e) {
             Log.e(LogTag.ERROR, "PauseBetweenSegments错误: " + e.getMessage());
         }
+    }
+
+    /**
+     * 播放演示文本合成效果
+     * @param text 演示文本
+     */
+    void sampleTTS(String text) throws InterruptedException {
+        SettingsData settings = settingsFunction.getSettings();
+        if (!checkSettings(settings)) {
+            Log.d(LogTag.ERROR, "完成配置后可预览声音");
+            mainHandler.post(() -> Toast.makeText(getApplicationContext(), "完成配置后可预览声音", Toast.LENGTH_SHORT).show());
+            return;
+        }
+        synthesisEngine.create(settings.getAppId(), settings.getToken(),
+                settings.getSelectedSpeakerId(), settings.getServiceCluster(), settings.isEmotional());
+        synthesisEngine.startEngine(text, null, null, null);
+        do {
+            ttsContext.audioDataQueue.take();
+            Log.d(LogTag.INFO, "演示音频队列是否消费完成: " + ttsContext.isAudioQueueDone.get());
+        } while (!ttsContext.isAudioQueueDone.get());
+        synthesisEngine.destroy();
     }
 }

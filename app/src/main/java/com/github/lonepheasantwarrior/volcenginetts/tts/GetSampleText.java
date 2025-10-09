@@ -43,7 +43,7 @@ public class GetSampleText extends Activity {
             finish();
             return;
         }
-        
+
         try {
             Locale locale = new Locale(language, country);
             returnData.putExtra(TextToSpeech.Engine.EXTRA_SAMPLE_TEXT, TtsVoiceSample.getByLocate(this, locale));
@@ -52,8 +52,28 @@ public class GetSampleText extends Activity {
             Log.e(TAG, "获取特定语言的示例文本失败: " + e.getMessage());
             returnData.putExtra(TextToSpeech.Engine.EXTRA_SAMPLE_TEXT, getString(R.string.tts_sample_default));
         }
-        
+
         setResult(result, returnData);
         finish();
+    }
+
+    /**
+     * 根据当前环境获取合适的TTS演示文本
+     *
+     * @return TTS演示文本
+     */
+    public String getRawSampleText() {
+        Bundle bundle = getIntent().getExtras();
+        if (bundle == null) {
+            return getString(R.string.tts_sample_default);
+        }
+
+        String language = bundle.getString("language");
+        String country = bundle.getString("country");
+
+        if (language == null || country == null) {
+            return getString(R.string.tts_sample_default);
+        }
+        return TtsVoiceSample.getByLocate(this, new Locale(language, country));
     }
 }

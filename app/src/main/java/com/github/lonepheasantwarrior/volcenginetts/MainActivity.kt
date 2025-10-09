@@ -277,6 +277,14 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
             selectedScene = speakerInfo[0] // 场景在索引0的位置
         }
     }
+
+    /**
+     * 播放演示声音
+     */
+    private fun playSampleVoice() {
+        //TODO 调用 com.github.lonepheasantwarrior.volcenginetts.tts.GetSampleText.getRawSampleText 获取用于演示的待合成文本
+        //TODO 调用 com.github.lonepheasantwarrior.volcenginetts.tts.TTSService.sampleTTS 对演示文本进行合成播放操作
+    }
 }
 
 // UI 组件 - 负责呈现和用户交互
