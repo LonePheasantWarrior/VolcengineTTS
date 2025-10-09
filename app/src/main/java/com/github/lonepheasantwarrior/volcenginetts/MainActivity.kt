@@ -49,7 +49,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -665,9 +664,19 @@ fun TTSVoiceConfigurationInputs(
                     enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
                     exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
                 ) {
-                    val configuration = LocalConfiguration.current
-                    val menuMaxHeight = 0.7 * configuration.screenHeightDp.dp
-                    val menuMaxWidth = 0.8 * configuration.screenWidthDp.dp
+                    // 使用WindowMetrics获取包含插入区域的屏幕高度（更现代的方法）
+                    val windowMetrics = androidx.compose.ui.platform.LocalView.current.context
+                        .getSystemService(android.view.WindowManager::class.java)
+                        .currentWindowMetrics
+                    val screenHeightPx = windowMetrics.bounds.height()
+                    val density = androidx.compose.ui.platform.LocalDensity.current.density
+                    val screenHeightDp = screenHeightPx / density
+                    
+                    val menuMaxHeight = 0.7 * screenHeightDp.dp
+                    // 使用WindowMetrics获取包含插入区域的屏幕宽度（更现代的方法）
+                    val screenWidthPx = windowMetrics.bounds.width()
+                    val screenWidthDp = screenWidthPx / density
+                    val menuMaxWidth = 0.8 * screenWidthDp.dp
 
                     DropdownMenu(
                         expanded = sceneDropdownExpanded,
@@ -741,9 +750,19 @@ fun TTSVoiceConfigurationInputs(
                     enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
                     exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
                 ) {
-                    val configuration = LocalConfiguration.current
-                    val menuMaxHeight = 0.7 * configuration.screenHeightDp.dp
-                    val menuMaxWidth = 0.8 * configuration.screenWidthDp.dp
+                    // 使用WindowMetrics获取包含插入区域的屏幕高度（更现代的方法）
+                    val windowMetrics = androidx.compose.ui.platform.LocalView.current.context
+                        .getSystemService(android.view.WindowManager::class.java)
+                        .currentWindowMetrics
+                    val screenHeightPx = windowMetrics.bounds.height()
+                    val density = androidx.compose.ui.platform.LocalDensity.current.density
+                    val screenHeightDp = screenHeightPx / density
+                    
+                    val menuMaxHeight = 0.7 * screenHeightDp.dp
+                    // 使用WindowMetrics获取包含插入区域的屏幕宽度（更现代的方法）
+                    val screenWidthPx = windowMetrics.bounds.width()
+                    val screenWidthDp = screenWidthPx / density
+                    val menuMaxWidth = 0.8 * screenWidthDp.dp
 
                     DropdownMenu(
                         expanded = speakerDropdownExpanded,
