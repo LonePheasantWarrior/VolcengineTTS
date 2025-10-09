@@ -37,12 +37,12 @@ class UpdateFunction(private val context: Context) {
                 
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
-                        return@withContext UpdateResult.Error("网络请求失败: ${response.code}")
+                        return@withContext UpdateResult.error("网络请求失败: ${response.code}")
                     }
                     
                     val responseBody = response.body.string()
                     if (responseBody.isEmpty()) {
-                        return@withContext UpdateResult.Error("响应内容为空")
+                        return@withContext UpdateResult.error("响应内容为空")
                     }
                     
                     val json = JSONObject(responseBody)
@@ -55,9 +55,9 @@ class UpdateFunction(private val context: Context) {
                     if (isNewVersionAvailable(currentVersion, latestVersion)) {
                         val downloadUrl = findApkDownloadUrl(json)
                         if (downloadUrl.isNotEmpty()) {
-                            UpdateResult.UpdateAvailable(latestVersion, releaseNotes, downloadUrl)
+                            UpdateResult.updateAvailable(latestVersion, releaseNotes, downloadUrl)
                         } else {
-                            UpdateResult.Error("未找到APK下载链接")
+                            UpdateResult.error("未找到APK下载链接")
                         }
                     } else {
                         UpdateResult.NoUpdate
@@ -66,7 +66,7 @@ class UpdateFunction(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.e(LogTag.ERROR, "检查更新失败", e)
-            UpdateResult.Error("检查更新失败: ${e.message}")
+            UpdateResult.error("检查更新失败: ${e.message}")
         }
     }
     
@@ -100,8 +100,8 @@ class UpdateFunction(private val context: Context) {
         if (assets != null) {
             for (i in 0 until assets.length()) {
                 val asset = assets.getJSONObject(i)
-                val name = asset.getString("name")
-                if (name.contains("apk", ignoreCase = true)) {
+                val contentType = asset.getString("content_type")
+                if (contentType.contains("android.package", ignoreCase = true)) {
                     return asset.getString("browser_download_url")
                 }
             }
@@ -130,7 +130,7 @@ class UpdateResult private constructor() {
     companion object {
         val NoUpdate = UpdateResult()
         
-        fun UpdateAvailable(version: String, releaseNotes: String, downloadUrl: String): UpdateResult {
+        fun updateAvailable(version: String, releaseNotes: String, downloadUrl: String): UpdateResult {
             return UpdateResult().apply {
                 this.version = version
                 this.releaseNotes = releaseNotes
@@ -139,7 +139,7 @@ class UpdateResult private constructor() {
             }
         }
         
-        fun Error(message: String): UpdateResult {
+        fun error(message: String): UpdateResult {
             return UpdateResult().apply {
                 this.message = message
                 this.type = ResultType.ERROR
