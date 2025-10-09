@@ -78,6 +78,14 @@ public class TTSService extends TextToSpeechService {
 
     @Override
     protected void onStop() {
+        ttsContext.isAudioQueueDone.set(true);
+        try {
+            ttsContext.audioDataQueue.put(CONTROL_SIGNAL);
+        } catch (InterruptedException e) {
+            Log.d(LogTag.ERROR, "向语音监听队列发送TTS停止控制信号发生错误: " + e.getMessage());
+            mainHandler.post(() -> Toast.makeText(getApplicationContext()
+                    , "发送TTS停止控制信号发生错误: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        }
         synthesisEngine.destroy();
     }
 
