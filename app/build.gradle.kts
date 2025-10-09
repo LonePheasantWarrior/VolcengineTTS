@@ -12,8 +12,8 @@ android {
         applicationId = "com.github.lonepheasantwarrior.volcenginetts"
         minSdk = 31
         targetSdk = 36
-        versionCode = 10002
-        versionName = "1.0.2"
+        versionCode = 10003
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
