@@ -62,6 +62,8 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.window)
 
     //火山引擎-豆包语音
     implementation(libs.speechengine.tob)
