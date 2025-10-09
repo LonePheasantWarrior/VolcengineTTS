@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
+import com.github.lonepheasantwarrior.volcenginetts.R;
+
 import java.util.Locale;
 
 
@@ -21,16 +23,36 @@ public class GetSampleText extends Activity {
 
         Intent i = getIntent();
         Bundle bundle = i.getExtras();
-        if (bundle == null) return;
+        if (bundle == null) {
+            // 即使没有bundle，也要设置默认示例文本
+            returnData.putExtra(TextToSpeech.Engine.EXTRA_SAMPLE_TEXT, getString(R.string.tts_sample_default));
+            setResult(result, returnData);
+            finish();
+            return;
+        }
 
         String language = bundle.getString("language");
         String country = bundle.getString("country");
         String variant = bundle.getString("variant");
         Log.d(TAG, language + "_" + country + "_" + variant);
 
-        if (language == null || country == null) return;
-        Locale locale = new Locale(language, country);
-        returnData.putExtra(TextToSpeech.Engine.EXTRA_SAMPLE_TEXT, TtsVoiceSample.getByLocate(this, locale));
+        if (language == null || country == null) {
+            // 即使缺少语言或国家信息，也要设置默认示例文本
+            returnData.putExtra(TextToSpeech.Engine.EXTRA_SAMPLE_TEXT, getString(R.string.tts_sample_default));
+            setResult(result, returnData);
+            finish();
+            return;
+        }
+        
+        try {
+            Locale locale = new Locale(language, country);
+            returnData.putExtra(TextToSpeech.Engine.EXTRA_SAMPLE_TEXT, TtsVoiceSample.getByLocate(this, locale));
+        } catch (Exception e) {
+            // 捕获所有可能的异常，确保返回默认文本
+            Log.e(TAG, "获取特定语言的示例文本失败: " + e.getMessage());
+            returnData.putExtra(TextToSpeech.Engine.EXTRA_SAMPLE_TEXT, getString(R.string.tts_sample_default));
+        }
+        
         setResult(result, returnData);
         finish();
     }
