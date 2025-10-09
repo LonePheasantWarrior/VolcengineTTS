@@ -264,8 +264,8 @@ class SynthesisEngine(private val context: Context) {
         ttsContext.currentEngineState.set(SpeechEngineDefines.ERR_NO_ERROR)
         ttsContext.currentEngineMsg.set("")
 
-        Log.i(LogTag.INFO, "引擎已销毁, 等待500毫秒以避免历史SDK回调通知对后续任务造成干扰...")
-        Thread.sleep(500)
+        Log.i(LogTag.INFO, "引擎已销毁, 等待350毫秒以避免SDK历史回调通知对后续任务造成干扰...")
+        Thread.sleep(350)
     }
 
     /**
