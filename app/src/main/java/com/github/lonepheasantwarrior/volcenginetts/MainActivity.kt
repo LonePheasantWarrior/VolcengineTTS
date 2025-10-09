@@ -63,10 +63,11 @@ import com.github.lonepheasantwarrior.volcenginetts.common.Constants
 import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
 import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine
 import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction
-import com.github.lonepheasantwarrior.volcenginetts.tts.GetSampleText
 import com.github.lonepheasantwarrior.volcenginetts.tts.TTSContext
+import com.github.lonepheasantwarrior.volcenginetts.tts.TtsVoiceSample
 import com.github.lonepheasantwarrior.volcenginetts.ui.WelcomeDialog
 import com.github.lonepheasantwarrior.volcenginetts.ui.theme.VolcengineTTSTheme
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private val synthesisEngine: SynthesisEngine get() = (applicationContext as TTSApplication).synthesisEngine
@@ -288,24 +289,22 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
     /**
      * 播放演示声音
      */
-    private fun playSampleVoice() {
-        // 创建GetSampleText实例并获取示例文本
-        val sampleText = GetSampleText().getRawSampleText()
-
+    fun playSampleVoice() {
         // 使用现有的SynthesisEngine播放示例文本
         try {
             // 检查设置是否有效
             if (appId.isBlank() || token.isBlank() ||
                 serviceCluster.isBlank() || selectedSpeakerId.isBlank()
             ) {
-                Log.d(LogTag.INFO, "完成配置后可预览声音")
+                Log.d(LogTag.INFO, "填写配置后可预览声音")
                 Toast.makeText(
                     getApplication(),
-                    "完成配置后可预览声音",
+                    "填写配置后可预览声音",
                     Toast.LENGTH_SHORT
                 ).show()
                 return
             }
+            val sampleText = TtsVoiceSample.getByLocate(getApplication(), Locale.getDefault())
 
             // 使用SynthesisEngine播放示例文本
             synthesisEngine.create(
@@ -313,11 +312,6 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
                 selectedSpeakerId, serviceCluster, isEmotional
             )
             synthesisEngine.startEngine(sampleText, null, null, null)
-            do {
-                ttsContext.audioDataQueue.take()
-                Log.d(LogTag.INFO, "演示音频队列是否消费完成: " + ttsContext.isAudioQueueDone.get())
-            } while (!ttsContext.isAudioQueueDone.get())
-            synthesisEngine.destroy()
         } catch (e: Exception) {
             Log.e(LogTag.ERROR, "播放演示声音失败: ${e.message}")
             Toast.makeText(
@@ -419,6 +413,8 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
                     onSpeakerSelect = { speakerInfo ->
                         viewModel.updateSelectedSpeakerIdAndName(speakerInfo.id, speakerInfo.name)
                         speakerDropdownExpanded = false
+                        // 用户选择声音后自动播放演示声音
+                        viewModel.playSampleVoice()
                     },
                     onIsEmotionalChange = { viewModel.isEmotional = it }
                 )

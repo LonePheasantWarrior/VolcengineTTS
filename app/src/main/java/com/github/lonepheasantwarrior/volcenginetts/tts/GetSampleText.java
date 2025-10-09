@@ -56,24 +56,4 @@ public class GetSampleText extends Activity {
         setResult(result, returnData);
         finish();
     }
-
-    /**
-     * 根据当前环境获取合适的TTS演示文本
-     *
-     * @return TTS演示文本
-     */
-    public String getRawSampleText() {
-        Bundle bundle = getIntent().getExtras();
-        if (bundle == null) {
-            return getString(R.string.tts_sample_default);
-        }
-
-        String language = bundle.getString("language");
-        String country = bundle.getString("country");
-
-        if (language == null || country == null) {
-            return getString(R.string.tts_sample_default);
-        }
-        return TtsVoiceSample.getByLocate(this, new Locale(language, country));
-    }
 }
