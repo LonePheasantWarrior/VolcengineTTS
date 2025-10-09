@@ -3,6 +3,7 @@ package com.github.lonepheasantwarrior.volcenginetts.function
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.github.lonepheasantwarrior.volcenginetts.R
 import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -31,7 +32,7 @@ class UpdateFunction(private val context: Context) {
         return try {
             withContext(Dispatchers.IO) {
                 val request = Request.Builder()
-                    .url("https://gitee.com/api/v5/repos/LonePheasantWarrior/volcengine-tts/releases/latest")
+                    .url(context.getString(R.string.update_check_url))
                     .build()
                 
                 client.newCall(request).execute().use { response ->

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -17,6 +18,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,6 +41,24 @@ fun UpdateDialog(
     onDownload: () -> Unit,
     onCancel: () -> Unit
 ) {
+    // 使用更现代化的WindowInfo获取窗口尺寸（包含插入区域）
+    val windowInfo = LocalWindowInfo.current
+    val containerSize = windowInfo.containerSize
+    val density = LocalDensity.current.density
+    
+    // 将像素尺寸转换为dp
+    val screenWidth = (containerSize.width / density).dp
+    val screenHeight = (containerSize.height / density).dp
+    
+    // 根据屏幕尺寸计算弹窗尺寸
+    val dialogWidth = when {
+        screenWidth < 360.dp -> screenWidth * 0.9f  // 小屏幕：宽度占90%
+        screenWidth < 600.dp -> screenWidth * 0.8f  // 中等屏幕：宽度占80%
+        else -> 480.dp  // 大屏幕：固定最大宽度
+    }
+    
+    val dialogMaxHeight = screenHeight * 0.7f  // 最大高度为屏幕高度的70%
+    
     AlertDialog(
         onDismissRequest = onCancel,
         title = {
@@ -74,36 +95,70 @@ fun UpdateDialog(
                     
                     Spacer(modifier = Modifier.height(8.dp))
                     
-                    Text(
-                        text = releaseNotes,
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Start,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    // 更新内容区域 - 移除嵌套滚动，使用固定高度
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp)  // 限制最大高度
+                    ) {
+                        Text(
+                            text = releaseNotes,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         },
         confirmButton = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                OutlinedButton(
-                    onClick = onCancel,
-                    modifier = Modifier.weight(1f)
+            // 根据屏幕尺寸调整按钮布局
+            if (screenWidth < 480.dp) {
+                // 小屏幕：垂直布局
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
                 ) {
-                    Text(text = stringResource(id = R.string.update_dialog_cancel))
+                    Button(
+                        onClick = onDownload,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = stringResource(id = R.string.update_dialog_download))
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    OutlinedButton(
+                        onClick = onCancel,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = stringResource(id = R.string.update_dialog_cancel))
+                    }
                 }
-                
-                Spacer(modifier = Modifier.width(16.dp))
-                
-                Button(
-                    onClick = onDownload,
-                    modifier = Modifier.weight(1f)
+            } else {
+                // 大屏幕：水平布局
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Text(text = stringResource(id = R.string.update_dialog_download))
+                    OutlinedButton(
+                        onClick = onCancel,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(text = stringResource(id = R.string.update_dialog_cancel))
+                    }
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    Button(
+                        onClick = onDownload,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(text = stringResource(id = R.string.update_dialog_download))
+                    }
                 }
             }
         },
@@ -111,7 +166,10 @@ fun UpdateDialog(
             dismissOnBackPress = true,
             dismissOnClickOutside = false
         ),
-        modifier = Modifier.padding(24.dp)
+        modifier = Modifier
+            .padding(16.dp)
+            .width(dialogWidth)
+            .heightIn(max = dialogMaxHeight)
     )
 }
 

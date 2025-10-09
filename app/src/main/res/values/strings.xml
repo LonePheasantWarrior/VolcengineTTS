@@ -39,4 +39,7 @@
     <string name="update_error_title">更新检查失败</string>
     <string name="update_error_ok">确定</string>
     
+    <!-- 更新检查接口 -->
+    <string name="update_check_url">https://gitee.com/api/v5/repos/LonePheasantWarrior/volcengine-tts/releases/latest</string>
+    
 </resources>
