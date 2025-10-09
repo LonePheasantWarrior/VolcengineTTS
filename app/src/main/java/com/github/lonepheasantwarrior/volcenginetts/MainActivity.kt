@@ -43,6 +43,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,14 +63,24 @@ import com.github.lonepheasantwarrior.volcenginetts.common.Constants
 import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
 import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine
 import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction
+import com.github.lonepheasantwarrior.volcenginetts.function.UpdateFunction
 import com.github.lonepheasantwarrior.volcenginetts.tts.TtsVoiceSample
+import com.github.lonepheasantwarrior.volcenginetts.ui.UpdateDialog
+import com.github.lonepheasantwarrior.volcenginetts.ui.UpdateErrorDialog
 import com.github.lonepheasantwarrior.volcenginetts.ui.WelcomeDialog
 import com.github.lonepheasantwarrior.volcenginetts.ui.theme.VolcengineTTSTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private val synthesisEngine: SynthesisEngine get() = (applicationContext as TTSApplication).synthesisEngine
-    private val settingsFunction: SettingsFunction get() = (applicationContext as TTSApplication).settingsFunction
+    internal val settingsFunction: SettingsFunction get() = (applicationContext as TTSApplication).settingsFunction
+    internal val updateFunction: UpdateFunction by lazy { UpdateFunction(this) }
+    internal val coroutineScope = CoroutineScope(Dispatchers.Main)
+    internal var updateCheckJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,25 +88,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             VolcengineTTSTheme {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Scaffold(modifier = Modifier.fillMaxSize()) {
-                        VolcengineTTSUI(modifier = Modifier.padding(it))
-                    }
-
-                    // 显示欢迎弹窗
-                    var showWelcomeDialog by remember { mutableStateOf(settingsFunction.shouldShowWelcomeDialog()) }
-
-                    if (showWelcomeDialog) {
-                        WelcomeDialog(
-                            onDismiss = {
-                                showWelcomeDialog = false
-                            },
-                            onDontShowAgain = { dontShowAgain ->
-                                settingsFunction.setShowWelcomeDialog(!dontShowAgain)
-                            }
-                        )
-                    }
-                }
+                UpdateCheckContent()
             }
         }
     }
@@ -103,6 +96,34 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         synthesisEngine.destroy()
+        updateCheckJob?.cancel()
+    }
+
+    /**
+     * 检查更新
+     */
+    internal fun checkForUpdate(
+        onUpdateAvailable: (version: String, releaseNotes: String, downloadUrl: String) -> Unit = { _, _, _ -> },
+        onError: (message: String) -> Unit = { _ -> },
+        onNoUpdate: () -> Unit = {}
+    ) {
+        updateCheckJob?.cancel()
+        updateCheckJob = coroutineScope.launch {
+            val pInfo = applicationContext.packageManager.getPackageInfo(applicationContext.packageName, 0)
+            val currentVersion = pInfo.versionName // 从build.gradle.kts获取的版本号
+            if (currentVersion == null || currentVersion.isBlank()) {
+                throw RuntimeException("未能获取到当前应用的版本号信息")
+            }
+            val result = updateFunction.checkForUpdate(currentVersion)
+            
+            if (result.isUpdateAvailable()) {
+                onUpdateAvailable(result.version, result.releaseNotes, result.downloadUrl)
+            } else if (result.isError()) {
+                onError(result.message)
+            } else if (result.isNoUpdate()) {
+                onNoUpdate()
+            }
+        }
     }
 }
 
@@ -802,5 +823,83 @@ fun TTSSaveSettingsButton(
                 style = MaterialTheme.typography.titleMedium
             )
         }
+    }
+}
+
+/**
+ * 更新检查内容组件
+ */
+@Composable
+private fun MainActivity.UpdateCheckContent() {
+    // 更新检查相关状态
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var showUpdateErrorDialog by remember { mutableStateOf(false) }
+    var updateVersion by remember { mutableStateOf("") }
+    var updateReleaseNotes by remember { mutableStateOf("") }
+    var updateDownloadUrl by remember { mutableStateOf("") }
+    var updateErrorMessage by remember { mutableStateOf("") }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(modifier = Modifier.fillMaxSize()) {
+            VolcengineTTSUI(modifier = Modifier.padding(it))
+        }
+
+        // 显示欢迎弹窗
+        var showWelcomeDialog by remember { mutableStateOf(settingsFunction.shouldShowWelcomeDialog()) }
+
+        if (showWelcomeDialog) {
+            WelcomeDialog(
+                onDismiss = {
+                    showWelcomeDialog = false
+                },
+                onDontShowAgain = { dontShowAgain ->
+                    settingsFunction.setShowWelcomeDialog(!dontShowAgain)
+                }
+            )
+        }
+
+        // 显示更新弹窗
+        if (showUpdateDialog) {
+            UpdateDialog(
+                version = updateVersion,
+                releaseNotes = updateReleaseNotes,
+                onDownload = {
+                    updateFunction.downloadApk(updateDownloadUrl)
+                    showUpdateDialog = false
+                },
+                onCancel = {
+                    showUpdateDialog = false
+                }
+            )
+        }
+
+        // 显示更新错误弹窗
+        if (showUpdateErrorDialog) {
+            UpdateErrorDialog(
+                errorMessage = updateErrorMessage,
+                onDismiss = {
+                    showUpdateErrorDialog = false
+                }
+            )
+        }
+    }
+
+    // 应用启动时检查更新
+    LaunchedEffect(Unit) {
+        checkForUpdate(
+            onUpdateAvailable = { version, releaseNotes, downloadUrl ->
+                showUpdateDialog = true
+                updateVersion = version
+                updateReleaseNotes = releaseNotes
+                updateDownloadUrl = downloadUrl
+            },
+            onError = { message ->
+                showUpdateErrorDialog = true
+                updateErrorMessage = message
+            },
+            onNoUpdate = {
+                // 没有更新，不显示任何弹窗
+            }
+        )
     }
 }

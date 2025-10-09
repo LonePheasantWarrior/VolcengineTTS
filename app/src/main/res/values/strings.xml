@@ -30,4 +30,13 @@
     <string name="tts_sample_ko">이것 은 음성 합성 예시 이다.</string>
     <string name="tts_sample_ar">هذا هو مثال على تركيب الكلام</string>
     
+    <!-- 更新相关字符串 -->
+    <string name="update_dialog_title">发现新版本</string>
+    <string name="update_dialog_message">最新版本号: %s</string>
+    <string name="update_dialog_release_notes">更新内容：</string>
+    <string name="update_dialog_cancel">取消</string>
+    <string name="update_dialog_download">下载</string>
+    <string name="update_error_title">更新检查失败</string>
+    <string name="update_error_ok">确定</string>
+    
 </resources>
