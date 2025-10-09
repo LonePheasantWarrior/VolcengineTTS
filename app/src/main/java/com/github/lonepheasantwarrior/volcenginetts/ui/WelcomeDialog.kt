@@ -1,7 +1,6 @@
 package com.github.lonepheasantwarrior.volcenginetts.ui
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -22,17 +21,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,7 +39,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -60,9 +55,15 @@ fun WelcomeDialog(
     onDontShowAgain: (Boolean) -> Unit
 ) {
     var dontShowAgain by remember { mutableStateOf(false) }
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    val screenHeight = configuration.screenHeightDp.dp
+    
+    // 使用更现代化的WindowInfo获取窗口尺寸（包含插入区域）
+    val windowInfo = LocalWindowInfo.current
+    val containerSize = windowInfo.containerSize
+    val density = LocalDensity.current.density
+    
+    // 将像素尺寸转换为dp
+    val screenWidth = (containerSize.width / density).dp
+    val screenHeight = (containerSize.height / density).dp
     val isSmallScreen = screenWidth < 360.dp || screenHeight < 640.dp
     
     Dialog(onDismissRequest = { onDismiss() }) {
@@ -241,12 +242,4 @@ private fun InfoItem(
             lineHeight = 18.sp
         )
     }
-}
-
-@Composable
-fun WelcomeDialogPreview() {
-    WelcomeDialog(
-        onDismiss = {},
-        onDontShowAgain = {}
-    )
 }
