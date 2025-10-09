@@ -63,7 +63,9 @@ import com.github.lonepheasantwarrior.volcenginetts.common.Constants
 import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
 import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine
 import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction
+import com.github.lonepheasantwarrior.volcenginetts.function.UpdateManager
 import com.github.lonepheasantwarrior.volcenginetts.tts.TtsVoiceSample
+import com.github.lonepheasantwarrior.volcenginetts.ui.UpdateDialog
 import com.github.lonepheasantwarrior.volcenginetts.ui.WelcomeDialog
 import com.github.lonepheasantwarrior.volcenginetts.ui.theme.VolcengineTTSTheme
 import java.util.Locale
@@ -71,10 +73,15 @@ import java.util.Locale
 class MainActivity : ComponentActivity() {
     private val synthesisEngine: SynthesisEngine get() = (applicationContext as TTSApplication).synthesisEngine
     private val settingsFunction: SettingsFunction get() = (applicationContext as TTSApplication).settingsFunction
+    private lateinit var updateManager: UpdateManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // 初始化更新管理器
+        updateManager = UpdateManager(this)
+        
         setContent {
             VolcengineTTSTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -98,11 +105,53 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        
+        // 在应用启动时检查更新
+        checkForUpdates()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         synthesisEngine.destroy()
+    }
+
+    /**
+     * 检查应用更新
+     */
+    private fun checkForUpdates() {
+        updateManager.checkForUpdates(
+            onUpdateAvailable = { latestVersion, downloadUrl ->
+                // 在主线程中更新UI状态
+                runOnUiThread {
+                    // 直接显示更新对话框，不重建整个UI
+                    setContent {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            // 显示原有的内容
+                            VolcengineTTSTheme {
+                                Scaffold(modifier = Modifier.fillMaxSize()) {
+                                    VolcengineTTSUI(modifier = Modifier.padding(it))
+                                }
+                            }
+
+                            // 然后显示更新对话框
+                            UpdateDialog(
+                                latestVersion = latestVersion,
+                                onDismissRequest = { /* 对话框可自行关闭 */ },
+                                onDownloadClick = { _ ->
+                                    updateManager.downloadLatestVersion(downloadUrl)
+                                },
+                                onViewDetailsClick = {
+                                    updateManager.viewUpdateDetails()
+                                }
+                            )
+                        }
+                    }
+                }
+            },
+            onError = { errorMsg ->
+                Log.e(LogTag.ERROR, "检查更新失败: $errorMsg")
+            }
+        )
     }
 }
 

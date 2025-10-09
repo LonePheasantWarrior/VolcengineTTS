@@ -12,8 +12,8 @@ android {
         applicationId = "com.github.lonepheasantwarrior.volcenginetts"
         minSdk = 31
         targetSdk = 36
-        versionCode = 10006
-        versionName = "1.0.6"
+        versionCode = 10005
+        versionName = "1.0.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.media3.exoplayer)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -61,4 +62,7 @@ dependencies {
 
     //火山引擎-豆包语音
     implementation(libs.speechengine.tob)
+    
+    // OkHttp for network requests
+    implementation(libs.okhttp)
 }
