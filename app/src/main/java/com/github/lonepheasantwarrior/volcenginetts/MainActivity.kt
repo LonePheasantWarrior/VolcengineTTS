@@ -63,7 +63,6 @@ import com.github.lonepheasantwarrior.volcenginetts.common.Constants
 import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
 import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine
 import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction
-import com.github.lonepheasantwarrior.volcenginetts.tts.TTSContext
 import com.github.lonepheasantwarrior.volcenginetts.tts.TtsVoiceSample
 import com.github.lonepheasantwarrior.volcenginetts.ui.WelcomeDialog
 import com.github.lonepheasantwarrior.volcenginetts.ui.theme.VolcengineTTSTheme
@@ -117,7 +116,6 @@ data class SpeakerInfo(
 class VolcengineTTSViewModel(application: Application) : AndroidViewModel(application) {
     private val synthesisEngine: SynthesisEngine get() = (getApplication() as TTSApplication).synthesisEngine
     private val settingsFunction: SettingsFunction get() = (getApplication() as TTSApplication).settingsFunction
-    private val ttsContext: TTSContext get() = (getApplication() as TTSApplication).ttsContext
 
     // 应用配置状态
     var appId by mutableStateOf("")
