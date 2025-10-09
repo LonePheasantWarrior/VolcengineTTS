@@ -1,6 +1,9 @@
 package com.github.lonepheasantwarrior.volcenginetts
 
+import android.app.Application
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -9,14 +12,17 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -34,6 +40,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,25 +50,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
-import android.app.Application
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.SwitchDefaults
-import androidx.compose.ui.res.stringResource
-import androidx.compose.foundation.BorderStroke
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.lonepheasantwarrior.volcenginetts.common.Constants
+import com.github.lonepheasantwarrior.volcenginetts.common.LogTag
 import com.github.lonepheasantwarrior.volcenginetts.engine.SynthesisEngine
-import com.github.lonepheasantwarrior.volcenginetts.ui.theme.VolcengineTTSTheme
 import com.github.lonepheasantwarrior.volcenginetts.function.SettingsFunction
+import com.github.lonepheasantwarrior.volcenginetts.tts.GetSampleText
+import com.github.lonepheasantwarrior.volcenginetts.tts.TTSContext
 import com.github.lonepheasantwarrior.volcenginetts.ui.WelcomeDialog
+import com.github.lonepheasantwarrior.volcenginetts.ui.theme.VolcengineTTSTheme
 
 class MainActivity : ComponentActivity() {
     private val synthesisEngine: SynthesisEngine get() = (applicationContext as TTSApplication).synthesisEngine
@@ -76,10 +81,10 @@ class MainActivity : ComponentActivity() {
                     Scaffold(modifier = Modifier.fillMaxSize()) {
                         VolcengineTTSUI(modifier = Modifier.padding(it))
                     }
-                    
+
                     // 显示欢迎弹窗
                     var showWelcomeDialog by remember { mutableStateOf(settingsFunction.shouldShowWelcomeDialog()) }
-                    
+
                     if (showWelcomeDialog) {
                         WelcomeDialog(
                             onDismiss = {
@@ -109,7 +114,9 @@ data class SpeakerInfo(
 
 // ViewModel 类 - 负责状态管理和业务逻辑
 class VolcengineTTSViewModel(application: Application) : AndroidViewModel(application) {
+    private val synthesisEngine: SynthesisEngine get() = (getApplication() as TTSApplication).synthesisEngine
     private val settingsFunction: SettingsFunction get() = (getApplication() as TTSApplication).settingsFunction
+    private val ttsContext: TTSContext get() = (getApplication() as TTSApplication).ttsContext
 
     // 应用配置状态
     var appId by mutableStateOf("")
@@ -124,13 +131,13 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
     var selectedScene by mutableStateOf("")
     var selectedSpeakerId by mutableStateOf("")
     var selectedSpeakerName by mutableStateOf("")
-    
+
     // 错误状态 - 用于UI提示
     var isAppIdError by mutableStateOf(false)
     var isTokenError by mutableStateOf(false)
     var isServiceClusterError by mutableStateOf(false)
     var isSpeakerError by mutableStateOf(false)
-    
+
     // 自定义方法以在输入时清除错误状态
     fun updateAppId(value: String) {
         appId = value
@@ -138,21 +145,21 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
             isAppIdError = false
         }
     }
-    
+
     fun updateToken(value: String) {
         token = value
         if (isTokenError && value.isNotBlank()) {
             isTokenError = false
         }
     }
-    
+
     fun updateServiceCluster(value: String) {
         serviceCluster = value
         if (isServiceClusterError && value.isNotBlank()) {
             isServiceClusterError = false
         }
     }
-    
+
     fun updateSelectedSpeakerIdAndName(id: String, name: String) {
         selectedSpeakerId = id
         selectedSpeakerName = name
@@ -282,8 +289,43 @@ class VolcengineTTSViewModel(application: Application) : AndroidViewModel(applic
      * 播放演示声音
      */
     private fun playSampleVoice() {
-        //TODO 调用 com.github.lonepheasantwarrior.volcenginetts.tts.GetSampleText.getRawSampleText 获取用于演示的待合成文本
-        //TODO 调用 com.github.lonepheasantwarrior.volcenginetts.tts.TTSService.sampleTTS 对演示文本进行合成播放操作
+        // 创建GetSampleText实例并获取示例文本
+        val sampleText = GetSampleText().getRawSampleText()
+
+        // 使用现有的SynthesisEngine播放示例文本
+        try {
+            // 检查设置是否有效
+            if (appId.isBlank() || token.isBlank() ||
+                serviceCluster.isBlank() || selectedSpeakerId.isBlank()
+            ) {
+                Log.d(LogTag.INFO, "完成配置后可预览声音")
+                Toast.makeText(
+                    getApplication(),
+                    "完成配置后可预览声音",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return
+            }
+
+            // 使用SynthesisEngine播放示例文本
+            synthesisEngine.create(
+                appId, token,
+                selectedSpeakerId, serviceCluster, isEmotional
+            )
+            synthesisEngine.startEngine(sampleText, null, null, null)
+            do {
+                ttsContext.audioDataQueue.take()
+                Log.d(LogTag.INFO, "演示音频队列是否消费完成: " + ttsContext.isAudioQueueDone.get())
+            } while (!ttsContext.isAudioQueueDone.get())
+            synthesisEngine.destroy()
+        } catch (e: Exception) {
+            Log.e(LogTag.ERROR, "播放演示声音失败: ${e.message}")
+            Toast.makeText(
+                getApplication(),
+                "播放演示声音失败: ${e.message}",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 }
 
@@ -366,7 +408,10 @@ fun VolcengineTTSUI(modifier: Modifier = Modifier) {
                         // 获取新场景的声音列表并设置为第一个声音选项
                         val newFilteredSpeakers = viewModel.filterSpeakersByScene(scene)
                         if (newFilteredSpeakers.isNotEmpty()) {
-                            viewModel.updateSelectedSpeakerIdAndName(newFilteredSpeakers.first().id, newFilteredSpeakers.first().name)
+                            viewModel.updateSelectedSpeakerIdAndName(
+                                newFilteredSpeakers.first().id,
+                                newFilteredSpeakers.first().name
+                            )
                         } else {
                             viewModel.updateSelectedSpeakerIdAndName("", "")
                         }
@@ -620,7 +665,10 @@ fun TTSVoiceConfigurationInputs(
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = if (isSpeakerError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                     ),
-                    border = BorderStroke(1.dp, if (isSpeakerError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline),
+                    border = BorderStroke(
+                        1.dp,
+                        if (isSpeakerError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
+                    ),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                 ) {
                     Text(
