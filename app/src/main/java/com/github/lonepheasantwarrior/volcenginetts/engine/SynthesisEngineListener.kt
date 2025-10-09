@@ -27,6 +27,12 @@ class SynthesisEngineListener(private val context: Context): com.bytedance.speec
         if (data != null && data.isNotEmpty()) {
             stdData = String(data)
         }
+
+        if (ttsContext.isTTSInterrupted.get()) {
+            Log.w(LogTag.INFO, "收到语音合成作业中断信号, 忽略合成引擎回调: $stdData")
+            return
+        }
+
         ttsContext.currentEngineMsg.set(stdData)
 
         when (type) {

@@ -19,6 +19,10 @@ public class TTSContext {
      */
     public final AtomicBoolean isAudioQueueDone = new AtomicBoolean(true);
     /**
+     * 是否已中断TTS作业
+     */
+    public final AtomicBoolean isTTSInterrupted = new AtomicBoolean(false);
+    /**
      * 语音合成引擎是否发生错误
      */
     public final AtomicBoolean isTTSEngineError = new AtomicBoolean(false);

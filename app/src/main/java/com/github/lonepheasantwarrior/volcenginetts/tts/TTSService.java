@@ -78,15 +78,17 @@ public class TTSService extends TextToSpeechService {
 
     @Override
     protected void onStop() {
+        Log.d(LogTag.INFO, "收到停止语音合成请求...");
+        synthesisEngine.destroy();
+        ttsContext.isTTSInterrupted.set(true);
         ttsContext.isAudioQueueDone.set(true);
         try {
             ttsContext.audioDataQueue.put(CONTROL_SIGNAL);
         } catch (InterruptedException e) {
-            Log.d(LogTag.ERROR, "向语音监听队列发送TTS停止控制信号发生错误: " + e.getMessage());
+            Log.e(LogTag.ERROR, "向语音监听队列发送TTS停止控制信号发生错误: " + e.getMessage());
             mainHandler.post(() -> Toast.makeText(getApplicationContext()
                     , "发送TTS停止控制信号发生错误: " + e.getMessage(), Toast.LENGTH_SHORT).show());
         }
-        synthesisEngine.destroy();
     }
 
     @Override
@@ -100,15 +102,16 @@ public class TTSService extends TextToSpeechService {
         }
 
         if (request.getCharSequenceText() == null || request.getCharSequenceText().toString().isBlank()) {
-            Log.d(LogTag.ERROR, "待合成文本为空");
+            Log.d(LogTag.ERROR, "收到语音合成请求, 待合成文本为空");
             callback.start(16000,
                     AudioFormat.ENCODING_PCM_16BIT, 1 /* Number of channels. */);
             callback.done();
             return;
         }
+        ttsContext.isTTSInterrupted.set(false);
 
         String text = request.getCharSequenceText().toString();
-        Log.d(LogTag.INFO, "待合成文本: " + text + "\n Language: " + request.getLanguage()
+        Log.d(LogTag.INFO, "收到语音合成请求, 待合成文本: " + text + "\n Language: " + request.getLanguage()
                 + ", SpeechRate: " + request.getSpeechRate() + ", Pitch: " + request.getPitch());
 
         // 如果文本长度超过80个字符，进行拆分处理
@@ -284,8 +287,8 @@ public class TTSService extends TextToSpeechService {
                         offset += chunkSize;
                     }
                 }
-                Log.d(LogTag.INFO, "音频队列是否消费完成: " + ttsContext.isAudioQueueDone.get());
-            } while (!ttsContext.isAudioQueueDone.get());
+                Log.d(LogTag.INFO, "收到语音合成状态信号: " + ttsContext.isAudioQueueDone.get());
+            } while (!ttsContext.isAudioQueueDone.get() && !ttsContext.isTTSInterrupted.get());
             if (ttsContext.isTTSEngineError.get()) {
                 throw new RuntimeException(ttsContext.currentEngineMsg.get());
             }
@@ -328,8 +331,12 @@ public class TTSService extends TextToSpeechService {
 
         for (int i = 0; i < segments.size(); i++) {
             String segment = segments.get(i);
-            Log.d(LogTag.INFO, "合成第 " + (i + 1) + "/" + segments.size() + " 个片段，长度: " + segment.length());
+            Log.d(LogTag.INFO, "开始合成第 " + (i + 1) + "/" + segments.size() + " 个片段... 长度: " + segment.length());
             Log.d(LogTag.INFO, "片段内容: " + segment);
+            if (ttsContext.isTTSInterrupted.get()) {
+                Log.w(LogTag.INFO, "收到语音合成作业中断信号. 跳过第 " + (i + 1) + " 个片段以及后续合成作业");
+                break;
+            }
 
             // 为每个片段创建新的合成引擎实例
             synthesisEngine.create(settings.getAppId(), settings.getToken(),
@@ -343,6 +350,11 @@ public class TTSService extends TextToSpeechService {
                 ttsContext.isTTSEngineError.set(false);
 
                 while (!segmentCompleted) {
+                    if (ttsContext.isTTSInterrupted.get()) {
+                        Log.w(LogTag.INFO, "收到语音合成作业中断信号");
+                        break;
+                    }
+                    
                     byte[] chunk = ttsContext.audioDataQueue.take();
                     // 检查是否是控制信号（空字节数组）
                     if (chunk != null && chunk != CONTROL_SIGNAL && chunk.length > 0) {
@@ -357,6 +369,7 @@ public class TTSService extends TextToSpeechService {
 
                     // 检查当前片段是否完成
                     if (ttsContext.isAudioQueueDone.get()) {
+                        Log.d(LogTag.INFO, "收到语音合成完成信号. 第 " + (i + 1) + " 个片段合成完成");
                         segmentCompleted = true;
                         if (ttsContext.isTTSEngineError.get()) {
                             hasError = true;

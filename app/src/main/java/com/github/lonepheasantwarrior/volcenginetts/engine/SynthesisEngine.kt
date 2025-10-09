@@ -256,7 +256,6 @@ class SynthesisEngine(private val context: Context) {
             mSpeechEngine!!.destroyEngine()
             mSpeechEngine = null
         }
-        Log.i(LogTag.INFO, "引擎已销毁")
         isCreated = false
         isParametersBeenSet = false
 
@@ -264,6 +263,7 @@ class SynthesisEngine(private val context: Context) {
         ttsContext.isTTSEngineError.set(false)
         ttsContext.currentEngineState.set(SpeechEngineDefines.ERR_NO_ERROR)
         ttsContext.currentEngineMsg.set("")
+        Log.i(LogTag.INFO, "引擎已销毁, TTS作业区已清理")
     }
 
     /**
