@@ -279,10 +279,9 @@ public class TTSService extends TextToSpeechService {
                 Log.d(LogTag.INFO, "音频队列是否消费完成: " + ttsContext.isAudioQueueDone.get());
             } while (!ttsContext.isAudioQueueDone.get());
             if (ttsContext.isTTSEngineError.get()) {
-                callback.error();
-            } else {
-                callback.done();
+                throw new RuntimeException(ttsContext.currentEngineMsg.get());
             }
+            callback.done();
         } catch (Exception e) {
             Log.e(LogTag.ERROR, "执行音频Callback发生错误: " + e.getMessage());
             callback.error();
