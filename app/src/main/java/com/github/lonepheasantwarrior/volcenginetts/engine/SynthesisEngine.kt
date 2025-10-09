@@ -217,21 +217,21 @@ class SynthesisEngine(private val context: Context) {
         if (speedRatio != null) {
             mSpeechEngine!!.setOptionInt(
                 SpeechEngineDefines.PARAMS_KEY_TTS_SPEED_INT,
-                speedRatio
+                speedRatio / 10
             )
         }
         //用于控制 TTS 音频的音量，支持的配置范围参考火山官网 语音技术/语音合成/离在线语音合成SDK/参数说明 文档
         if (volumeRatio != null) {
             mSpeechEngine!!.setOptionInt(
                 SpeechEngineDefines.PARAMS_KEY_TTS_VOLUME_INT,
-                volumeRatio
+                volumeRatio / 10
             )
         }
         //用于控制 TTS 音频的音高，支持的配置范围参考火山官网 语音技术/语音合成/离在线语音合成SDK/参数说明 文档
         if (pitchRatio != null) {
             mSpeechEngine!!.setOptionInt(
                 SpeechEngineDefines.PARAMS_KEY_TTS_PITCH_INT,
-                pitchRatio
+                pitchRatio / 10
             )
         }
 

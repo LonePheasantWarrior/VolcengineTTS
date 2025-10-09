@@ -100,8 +100,8 @@ public class TTSService extends TextToSpeechService {
         }
 
         String text = request.getCharSequenceText().toString();
-        Log.d(LogTag.INFO, "待合成文本长度: " + text.length());
-        Log.d(LogTag.INFO, "待合成文本: " + text);
+        Log.d(LogTag.INFO, "待合成文本: " + text + "\n Language: " + request.getLanguage()
+                + ", SpeechRate: " + request.getSpeechRate() + ", Pitch: " + request.getPitch());
 
         // 如果文本长度超过80个字符，进行拆分处理
         if (text.length() > 80) {
