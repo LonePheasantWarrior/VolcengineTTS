@@ -386,12 +386,6 @@ public class TTSService extends TextToSpeechService {
                 if (hasError) {
                     break;
                 }
-
-                // 在片段之间添加短暂停顿（除了最后一个片段）
-                if (i < segments.size() - 1) {
-                    addPauseBetweenSegments();
-                }
-
             } catch (Exception e) {
                 Log.e(LogTag.ERROR, "处理第 " + (i + 1) + " 个片段时发生错误: " + e.getMessage());
                 hasError = true;
@@ -404,17 +398,6 @@ public class TTSService extends TextToSpeechService {
             callback.error();
         } else {
             callback.done();
-        }
-    }
-
-    /**
-     * 在文本片段之间添加短暂停顿,尽可能避免下一轮播放时因为异步回调延迟导致播放期间收到引擎关闭通知进而带来意外停止
-     */
-    private void addPauseBetweenSegments() {
-        try {
-            Thread.sleep(200);
-        } catch (Exception e) {
-            Log.e(LogTag.ERROR, "PauseBetweenSegments错误: " + e.getMessage());
         }
     }
 
