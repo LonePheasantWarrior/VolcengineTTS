@@ -49,13 +49,15 @@ class SynthesisEngineListener(private val context: Context): com.bytedance.speec
             }
 
             SpeechEngineDefines.MESSAGE_TYPE_ENGINE_STOP -> {
-                ttsContext.isAudioQueueDone.set(true)
                 Log.d(LogTag.SDK_INFO, "引擎关闭通知: $stdData")
+                ttsContext.isAudioQueueDone.set(true)
+                ttsContext.audioDataQueue.put(controlSignal)
             }
 
             SpeechEngineDefines.MESSAGE_TYPE_ENGINE_ERROR -> {
                 ttsContext.isAudioQueueDone.set(true)
                 ttsContext.isTTSEngineError.set(true)
+                ttsContext.audioDataQueue.put(controlSignal)
                 Log.e(LogTag.SDK_ERROR, "引擎错误通知: $stdData")
                 mainHandler.post {
                     Toast.makeText(context, "引擎错误: $stdData", Toast.LENGTH_SHORT).show()
