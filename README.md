@@ -1,6 +1,6 @@
 # 火山引擎TTS
 
-> 基于火山引擎豆包语音服务的在线TTS安卓应用
+> 基于火山引擎豆包语音服务的在线安卓TTS应用
 >
 > An online TTS Android application based on the Doubao voice service of ByteDance Cloud
 
