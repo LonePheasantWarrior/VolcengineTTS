@@ -6,7 +6,8 @@
 
 ### 推荐搭配阅读软件
 
-[Legado / 开源阅读](https://github.com/gedoor/legado)
+[Legado / 开源阅读](https://github.com/gedoor/legado)  
+[Legado / 开源阅读 APP书源](https://github.com/aoaostar/legado)
 
 ### AppId和Token获取
 
