@@ -1,3 +1,7 @@
+## 该工程已停止维护，请移步新的TTS应用[Talkify](https://github.com/LonePheasantWarrior/Talkify)
+
+Talkify是一款支持多云端语音合成服务（豆包语音，阿里千问3等）的现代化TTS引擎。
+
 # 火山引擎TTS
 
 > 基于火山引擎豆包语音服务的在线安卓TTS应用
